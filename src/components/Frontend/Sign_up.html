@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaflet App - Create Account</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+    <style>
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.5s, color 0.5s;
+        }
+    </style>
+    <script>
+       
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'forest-dark': '#0F1D13',
+                        'forest-text': '#1A3320',
+                        'sage-green': '#A8C999',
+                        'sage-light': '#D6E4D1',
+                        'cream-light': '#F8F9F5',
+                        'wood-dark': '#4F3A2C',
+                        'wood-light': '#E0DCD7',
+                    },
+                    boxShadow: {
+                        'soft': '0 8px 30px rgba(0, 0, 0, 0.05)',
+                        'soft-dark': '0 8px 30px rgba(255, 255, 255, 0.05)',
+                    }
+                }
+            }
+        }
+
+        // JavaScript for Dark Mode Toggle (copied from existing files)
+        document.addEventListener('DOMContentLoaded', () => {
+            const htmlEl = document.documentElement;
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const savedTheme = localStorage.getItem('theme');
+            let isDarkMode = savedTheme === 'dark' || (savedTheme === null && prefersDark);
+
+            if (isDarkMode) { htmlEl.classList.add('dark'); }
+
+            window.toggleDarkMode = function() {
+                isDarkMode = !isDarkMode;
+                if (isDarkMode) {
+                    htmlEl.classList.add('dark');
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    htmlEl.classList.remove('dark');
+                    localStorage.setItem('theme', 'light');
+                }
+                lucide.createIcons();
+            };
+            lucide.createIcons();
+        });
+    </script>
+</head>
+<body class="bg-cream-light text-forest-text dark:bg-forest-dark dark:text-sage-light min-h-screen flex items-center justify-center p-4">
+
+    <div class="absolute top-4 right-4">
+        <button onclick="toggleDarkMode()" class="p-2 rounded-full bg-wood-light/50 dark:bg-wood-dark/50 hover:bg-wood-light dark:hover:bg-wood-dark transition duration-300 shadow-sm">
+            <i data-lucide="sun" class="w-6 h-6 text-forest-text dark:hidden"></i>
+            <i data-lucide="moon" class="w-6 h-6 text-sage-light hidden dark:block"></i>
+        </button>
+    </div>
+
+    <div class="w-full max-w-md bg-white dark:bg-forest-text p-8 sm:p-10 rounded-3xl shadow-soft dark:shadow-soft-dark border border-wood-light/50 dark:border-wood-dark/50 transition duration-500">
+        
+        <div class="text-center mb-8">
+            <div class="text-5xl font-serif font-extrabold text-sage-green mb-2">Leaflet</div>
+            <h1 class="text-2xl font-semibold text-forest-text dark:text-sage-light">Start Your Garden Journey</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Create your free account in seconds.</p>
+        </div>
+
+        <form class="space-y-4" method="POST" action="/signup">
+    
+    <div>
+        <label for="username" class="block text-sm font-medium mb-2 text-gray-700 dark:text-sage-light">Username</label>
+        <div class="relative">
+            <i data-lucide="leaf" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-sage-green"></i>
+            <input 
+                type="text" 
+                id="username" 
+                name="username" placeholder="A name for your indoor garden" 
+                required 
+                class="w-full p-3 pl-10 border border-wood-light dark:border-wood-dark rounded-xl focus:ring-sage-green focus:border-sage-green dark:bg-forest-dark/50 dark:text-sage-light transition">
+        </div>
+    </div>
+    
+    <div>
+        <label for="email" class="block text-sm font-medium mb-2 text-gray-700 dark:text-sage-light">Email Address</label>
+        <div class="relative">
+            <i data-lucide="mail" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-sage-green"></i>
+            <input 
+                type="email" 
+                id="email" 
+                name="email" placeholder="you@example.com" 
+                required 
+                class="w-full p-3 pl-10 border border-wood-light dark:border-wood-dark rounded-xl focus:ring-sage-green focus:border-sage-green dark:bg-forest-dark/50 dark:text-sage-light transition">
+        </div>
+    </div>
+
+    <div>
+        <label for="password" class="block text-sm font-medium mb-2 text-gray-700 dark:text-sage-light">Password</label>
+        <div class="relative">
+             <i data-lucide="lock" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-sage-green"></i>
+            <input 
+                type="password" 
+                id="password" 
+                name="password" placeholder="Min. 8 characters" 
+                required 
+                class="w-full p-3 pl-10 border border-wood-light dark:border-wood-dark rounded-xl focus:ring-sage-green focus:border-sage-green dark:bg-forest-dark/50 dark:text-sage-light transition">
+        </div>
+    </div>
+
+    <div>
+        <label for="confirm-password" class="block text-sm font-medium mb-2 text-gray-700 dark:text-sage-light">Confirm Password</label>
+        <div class="relative">
+             <i data-lucide="lock" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-sage-green"></i>
+            <input 
+                type="password" 
+                id="confirm-password" 
+                name="confirm_password" placeholder="Repeat your password" 
+                required 
+                class="w-full p-3 pl-10 border border-wood-light dark:border-wood-dark rounded-xl focus:ring-sage-green focus:border-sage-green dark:bg-forest-dark/50 dark:text-sage-light transition">
+        </div>
+    </div>
+
+    <button type="submit" class="w-full flex items-center justify-center space-x-2 px-6 py-3 bg-sage-green text-forest-dark font-bold text-lg rounded-xl shadow-md hover:shadow-lg transition-all transform hover:scale-[1.01] mt-6">
+        <i data-lucide="user-plus" class="w-5 h-5"></i>
+        <span>Create Account</span>
+    </button>
+</form>
+
+        <div class="mt-8 text-center text-sm">
+            <p class="text-gray-600 dark:text-gray-400">
+                Already have an account? 
+                <a href="login.html" class="text-sage-green font-medium hover:underline transition">Log In</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

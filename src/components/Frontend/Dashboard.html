@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaflet App - Dashboard</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Lucide icons for UI elements -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Load Inter font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles for the organic, sophisticated aesthetic */
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.5s, color 0.5s;
+        }
+        /* Custom scrolling bar for a refined feel */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(45, 68, 53, 0.5); /* forest-light */
+            border-radius: 10px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: rgba(214, 228, 209, 0.2); /* sage-light transparent */
+        }
+
+        /* Utility for mobile responsiveness (hides sidebar on small screens) */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                position: fixed;
+                z-index: 20;
+                box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+            }
+            .sidebar-open {
+                transform: translateX(0);
+            }
+        }
+    </style>
+    <script>
+        // Custom Tailwind configuration for the duo-chromatic theme (copied from landing page)
+        tailwind.config = {
+            darkMode: 'class', // Enable dark mode based on 'dark' class on <html>
+            theme: {
+                extend: {
+                    colors: {
+                        'forest-dark': '#0F1D13',     // Deep Forest Green (Dark background)
+                        'forest-text': '#1A3320',     // Dark text in light mode
+                        'sage-green': '#A8C999',      // Main accent color
+                        'sage-light': '#D6E4D1',      // Light Sage/Cream (Light text/accents)
+                        'cream-light': '#F8F9F5',     // Off-White/Cream (Light background)
+                        'wood-dark': '#4F3A2C',       // Earthy Brown/Slate for dark accents
+                        'wood-light': '#E0DCD7',      // Light Wood Tone for light accents
+                    },
+                    boxShadow: {
+                        'soft': '0 8px 30px rgba(0, 0, 0, 0.05)',
+                        'soft-dark': '0 8px 30px rgba(255, 255, 255, 0.05)',
+                    }
+                }
+            }
+        }
+
+        // JavaScript for App Logic
+        document.addEventListener('DOMContentLoaded', () => {
+            const htmlEl = document.documentElement;
+            const sidebarEl = document.getElementById('sidebar');
+            const menuButton = document.getElementById('menu-button');
+            const overlay = document.getElementById('overlay');
+            const addPlantModal = document.getElementById('add-plant-modal');
+
+            // --- Dark Mode Logic (Copied from Landing Page) ---
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const savedTheme = localStorage.getItem('theme');
+            let isDarkMode = savedTheme === 'dark' || (savedTheme === null && prefersDark);
+
+            if (isDarkMode) { htmlEl.classList.add('dark'); }
+
+            window.toggleDarkMode = function() {
+                isDarkMode = !isDarkMode;
+                if (isDarkMode) {
+                    htmlEl.classList.add('dark');
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    htmlEl.classList.remove('dark');
+                    localStorage.setItem('theme', 'light');
+                }
+                lucide.createIcons();
+            };
+
+            // --- Mobile Sidebar Toggle ---
+            const toggleSidebar = () => {
+                sidebarEl.classList.toggle('sidebar-open');
+                overlay.classList.toggle('hidden');
+            };
+
+            menuButton.addEventListener('click', toggleSidebar);
+            overlay.addEventListener('click', toggleSidebar);
+
+
+            // --- Modal Functions (for Add Plant) ---
+            window.openAddPlantModal = function() {
+                addPlantModal.classList.remove('hidden');
+            };
+            window.closeAddPlantModal = function() {
+                addPlantModal.classList.add('hidden');
+            };
+            
+            // Initial icon rendering
+            lucide.createIcons();
+        });
+    </script>
+</head>
+<body class="bg-cream-light text-forest-text dark:bg-forest-dark dark:text-sage-light min-h-screen flex">
+
+    <!-- Mobile Overlay for Sidebar -->
+    <div id="overlay" class="hidden fixed inset-0 bg-black opacity-30 z-10 md:hidden transition-opacity duration-300"></div>
+
+    <!-- 1. Fixed Sidebar Navigation -->
+    <aside id="sidebar" class="sidebar md:translate-x-0 w-64 h-screen bg-white dark:bg-forest-text p-6 flex flex-col transition-transform duration-300">
+        <div class="text-3xl font-serif font-extrabold text-sage-green mb-8">Leaflet</div>
+        <nav class="flex-grow space-y-2">
+            <!-- Dashboard Link -->
+            <a href="#" class="flex items-center space-x-3 p-3 rounded-xl bg-sage-green text-forest-dark font-semibold shadow-soft">
+                <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                <span>Dashboard</span>
+            </a>
+            <!-- Plant Database Link -->
+            <a href="#" class="flex items-center space-x-3 p-3 rounded-xl text-forest-text dark:text-sage-light hover:bg-wood-light/50 dark:hover:bg-wood-dark transition">
+                <i data-lucide="leaf" class="w-5 h-5"></i>
+                <span>Plant Database</span>
+            </a>
+            <!-- Tasks/Reminders Link -->
+            <a href="#" class="flex items-center space-x-3 p-3 rounded-xl text-forest-text dark:text-sage-light hover:bg-wood-light/50 dark:hover:bg-wood-dark transition">
+                <i data-lucide="bell" class="w-5 h-5"></i>
+                <span>Tasks & Reminders</span>
+                <span class="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">3</span>
+            </a>
+        </nav>
+        <div class="pt-6 border-t border-wood-light dark:border-wood-dark/50">
+            <a href="#" class="flex items-center space-x-3 p-3 rounded-xl text-forest-text dark:text-sage-light hover:bg-wood-light/50 dark:hover:bg-wood-dark transition">
+                <i data-lucide="settings" class="w-5 h-5"></i>
+                <span>Settings</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- 2. Main Content Area -->
+    <div class="flex-1 overflow-y-auto p-4 sm:p-8">
+        <!-- Header Bar -->
+        <header class="flex justify-between items-center mb-8">
+            <div class="flex items-center space-x-4">
+                <button id="menu-button" class="p-2 rounded-full hover:bg-wood-light dark:hover:bg-wood-dark md:hidden transition">
+                    <i data-lucide="menu" class="w-6 h-6 text-forest-text dark:text-sage-light"></i>
+                </button>
+                <h1 class="text-3xl sm:text-4xl font-bold text-forest-text dark:text-sage-light">Hello, Green Thumb!</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <!-- Add Plant Button -->
+                <a href="Add_plant.html" class="flex items-center space-x-2 px-4 py-2 bg-sage-green text-forest-dark font-semibold rounded-full shadow-soft hover:shadow-lg transition-all">
+    <i data-lucide="plus" class="w-5 h-5"></i>
+    <span class="hidden sm:inline">Add New Plant</span>
+</a>
+                <!-- Dark Mode Toggle -->
+                <button onclick="toggleDarkMode()" class="p-2 rounded-full hover:bg-wood-light dark:hover:bg-wood-dark transition duration-300">
+                    <i data-lucide="sun" class="w-6 h-6 dark:hidden"></i>
+                    <i data-lucide="moon" class="w-6 h-6 hidden dark:block"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- 3. Watering Reminders Alert System -->
+        <section class="mb-8 p-4 bg-yellow-100 dark:bg-wood-dark/70 border-l-4 border-yellow-500 dark:border-yellow-400 rounded-lg shadow-md transition duration-300">
+            <div class="flex items-start">
+                <i data-lucide="alert-triangle" class="w-6 h-6 text-yellow-600 dark:text-yellow-400 mr-3 mt-1 flex-shrink-0"></i>
+                <div>
+                    <h3 class="font-bold text-lg text-forest-text dark:text-sage-light">Urgent Reminders (3)</h3>
+                    <p class="text-sm text-gray-700 dark:text-gray-300">
+                        <span class="font-semibold text-red-600 dark:text-red-400">Fiddle Leaf Fig</span> needs water today!
+                        <span class="mx-2">•</span>
+                        Your <span class="font-semibold">Monstera</span> needs fertilizer this weekend.
+                        <span class="mx-2">•</span>
+                        Check the humidity for your <span class="font-semibold">Orchid</span>.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. Owner's Dashboard: Plant Grid -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold mb-6 text-forest-text dark:text-sage-light">My Current Plants (4)</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+
+                <!-- Plant Card 1 (Happy) -->
+                <div class="bg-white dark:bg-wood-dark/80 rounded-2xl shadow-soft dark:shadow-soft-dark overflow-hidden transition duration-300 hover:scale-[1.02] cursor-pointer border border-green-500/30">
+                    <div class="h-48 relative">
+                        <img src="https://placehold.co/600x400/A8C999/0F1D13?text=Monstera" alt="Monstera Deliciosa" class="w-full h-full object-cover">
+                        <span class="absolute top-3 right-3 text-xs font-bold px-3 py-1 rounded-full bg-green-600 text-white flex items-center space-x-1">
+                            <i data-lucide="check-circle" class="w-4 h-4"></i>
+                            <span>Happy</span>
+                        </span>
+                    </div>
+                    <div class="p-4 space-y-2">
+                        <h3 class="text-xl font-semibold text-forest-text dark:text-sage-light">Monstera Deliciosa</h3>
+                        <div class="text-sm text-gray-600 dark:text-gray-300 flex justify-between">
+                            <span class="flex items-center space-x-1"><i data-lucide="droplet" class="w-4 h-4 text-blue-500"></i><span>Water in 2 days</span></span>
+                            <span class="flex items-center space-x-1"><i data-lucide="sun" class="w-4 h-4 text-yellow-600"></i><span>Bright Indirect</span></span>
+                        </div>
+                        <progress class="w-full h-1 appearance-none rounded-full" value="80" max="100" style="accent-color: #A8C999;"></progress>
+                    </div>
+                </div>
+
+                <!-- Plant Card 2 (Thirsty/Urgent) -->
+                <div class="bg-white dark:bg-wood-dark/80 rounded-2xl shadow-soft dark:shadow-soft-dark overflow-hidden transition duration-300 hover:scale-[1.02] cursor-pointer border border-red-500/30">
+                    <div class="h-48 relative">
+                        <img src="https://placehold.co/600x400/F0E0D0/4F3A2C?text=Fiddle+Leaf" alt="Fiddle Leaf Fig" class="w-full h-full object-cover">
+                         <span class="absolute top-3 right-3 text-xs font-bold px-3 py-1 rounded-full bg-red-600 text-white flex items-center space-x-1">
+                            <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                            <span>Urgent!</span>
+                        </span>
+                    </div>
+                    <div class="p-4 space-y-2">
+                        <h3 class="text-xl font-semibold text-forest-text dark:text-sage-light">Fiddle Leaf Fig</h3>
+                        <div class="text-sm text-gray-600 dark:text-gray-300 flex justify-between">
+                            <span class="flex items-center space-x-1 text-red-600 dark:text-red-400 font-semibold"><i data-lucide="droplet" class="w-4 h-4"></i><span>Water Now!</span></span>
+                            <span class="flex items-center space-x-1"><i data-lucide="sun" class="w-4 h-4 text-yellow-600"></i><span>Medium Light</span></span>
+                        </div>
+                        <progress class="w-full h-1 appearance-none rounded-full" value="20" max="100" style="accent-color: #EF4444;"></progress>
+                    </div>
+                </div>
+
+                <!-- Plant Card 3 (Fed) -->
+                <div class="bg-white dark:bg-wood-dark/80 rounded-2xl shadow-soft dark:shadow-soft-dark overflow-hidden transition duration-300 hover:scale-[1.02] cursor-pointer border border-blue-500/30">
+                    <div class="h-48 relative">
+                        <img src="https://placehold.co/600x400/B0C4DE/0F1D13?text=Snake+Plant" alt="Sansevieria" class="w-full h-full object-cover">
+                         <span class="absolute top-3 right-3 text-xs font-bold px-3 py-1 rounded-full bg-blue-600 text-white flex items-center space-x-1">
+                            <i data-lucide="zap" class="w-4 h-4"></i>
+                            <span>Fed</span>
+                        </span>
+                    </div>
+                    <div class="p-4 space-y-2">
+                        <h3 class="text-xl font-semibold text-forest-text dark:text-sage-light">Sansevieria</h3>
+                        <div class="text-sm text-gray-600 dark:text-gray-300 flex justify-between">
+                            <span class="flex items-center space-x-1"><i data-lucide="droplet" class="w-4 h-4 text-blue-500"></i><span>Water in 7 days</span></span>
+                            <span class="flex items-center space-x-1"><i data-lucide="sun" class="w-4 h-4 text-gray-400"></i><span>Low Light</span></span>
+                        </div>
+                        <progress class="w-full h-1 appearance-none rounded-full" value="95" max="100" style="accent-color: #A8C999;"></progress>
+                    </div>
+                </div>
+
+                 <!-- Plant Card 4 (Needs Fertilizer) -->
+                <div class="bg-white dark:bg-wood-dark/80 rounded-2xl shadow-soft dark:shadow-soft-dark overflow-hidden transition duration-300 hover:scale-[1.02] cursor-pointer border border-orange-500/30">
+                    <div class="h-48 relative">
+                        <img src="https://placehold.co/600x400/D0F0C0/1A3320?text=Pothos" alt="Golden Pothos" class="w-full h-full object-cover">
+                         <span class="absolute top-3 right-3 text-xs font-bold px-3 py-1 rounded-full bg-orange-500 text-white flex items-center space-x-1">
+                            <i data-lucide="fertilize" class="w-4 h-4"></i>
+                            <span>Fertilize</span>
+                        </span>
+                    </div>
+                    <div class="p-4 space-y-2">
+                        <h3 class="text-xl font-semibold text-forest-text dark:text-sage-light">Golden Pothos</h3>
+                        <div class="text-sm text-gray-600 dark:text-gray-300 flex justify-between">
+                            <span class="flex items-center space-x-1"><i data-lucide="droplet" class="w-4 h-4 text-blue-500"></i><span>Water in 3 days</span></span>
+                            <span class="flex items-center space-x-1"><i data-lucide="sun" class="w-4 h-4 text-yellow-600"></i><span>Medium Light</span></span>
+                        </div>
+                        <progress class="w-full h-1 appearance-none rounded-full" value="65" max="100" style="accent-color: #A8C999;"></progress>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. Simulated Plant Database Search -->
+        <section class="mt-12 bg-wood-light/50 dark:bg-wood-dark/50 p-6 rounded-2xl shadow-soft dark:shadow-soft-dark">
+            <h2 class="text-2xl font-bold mb-4 text-forest-text dark:text-sage-light">Need Advice? Use the Plant Database</h2>
+            <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
+                <input type="text" placeholder="e.g., How to treat Spider Mites?" class="flex-grow p-3 rounded-xl border border-wood-light dark:border-wood-dark focus:ring-sage-green focus:border-sage-green dark:bg-forest-dark/50 dark:text-sage-light">
+                <button class="px-6 py-3 bg-forest-text dark:bg-sage-green text-cream-light dark:text-forest-dark font-semibold rounded-xl hover:opacity-90 transition">
+                    Search Species & Care
+                </button>
+            </div>
+        </section>
+
+    </div>
+
