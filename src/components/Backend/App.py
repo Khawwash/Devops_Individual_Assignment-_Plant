@@ -59,6 +59,11 @@ def search_plants():
     except Exception:
         logging.exception("Failed to query plants")
         return jsonify([])
+    
+
+@app.get("/Reminder")
+def reminders():
+    return send_from_directory(FRONTEND_DIR, "Reminders.html")
 
 
 
