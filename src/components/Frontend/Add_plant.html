@@ -26,7 +26,7 @@
         }
 
         // --- Core Add Plant Logic ---
-        document.addEventListener('DOMContentLoaded', () => {
+       document.addEventListener('DOMContentLoaded', () => {
     const htmlEl = document.documentElement;
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const savedTheme = localStorage.getItem('theme');
@@ -35,7 +35,7 @@
     const plantList = document.getElementById('plant-options');
     const waterField = document.getElementById('water-frequency');
     const sunlightField = document.getElementById('sunlight-hours');
-    const soilField = document.getElementById('soil-type'); // optional, will be null for now
+    const soilField = document.getElementById('soil-type');
     let debounceTimer;
     let isDarkMode = savedTheme === 'dark' || (savedTheme === null && prefersDark);
 
@@ -50,138 +50,188 @@
             htmlEl.classList.remove('dark');
             localStorage.setItem('theme', 'light');
         }
-        lucide.createIcons();
+        // Assuming lucide is loaded and needed for icon updates
+        if (typeof lucide !== 'undefined' && lucide.createIcons) {
+            lucide.createIcons();
+        }
     };
 
-        searchField.setAttribute('autocomplete', 'off'); // helps some browsers
+    // --- 1. FORM SUBMIT HANDLER (Attached only ONCE) ---
+    const formEl = document.getElementById('add-plant-form');
+    if (formEl) {
+        formEl.addEventListener('submit', (e) => {
+            e.preventDefault(); 
 
-    searchField.addEventListener('input', (event) => {
-    clearTimeout(debounceTimer);
-    const query = event.target.value.trim();
-    if (query.length < 2) {
-        plantList.innerHTML = '';
-        const box = document.getElementById('plant-suggestions');
-        if (box) { box.classList.add('hidden'); box.innerHTML = ''; }
-        return;
-    }
-    debounceTimer = setTimeout(async () => {
-        const currentQuery = query;
-        try {
-            const res = await fetch('/api/plants/search?q=' + encodeURIComponent(query));
-            if (!res.ok) return;
-            const plants = await res.json();
-            if (!plants.length) { console.log('Using stub'); plants.push({name: 'Monstera'}, {name: 'Corn'}); }
+            const payload = {
+                id: Date.now(), 
+                nickname: document.getElementById('nickname')?.value?.trim() || '',
+                species: document.getElementById('species-search')?.value?.trim() || '',
+                water_frequency: document.getElementById('water-frequency')?.value || '',
+                last_watered: document.getElementById('last-watered')?.value || '',
+                
+                // Assuming you have an element with ID 'sunlight-select'
+                sunlight_note: document.getElementById('sunlight-select')?.value || '', 
+                location: document.getElementById('location')?.value?.trim() || '',
+                notes: document.getElementById('notes')?.value?.trim() || ''
+            };
+            document.getElementById('save-button')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            const formEl = document.getElementById('add-plant-form') || document.querySelector('form');
             
-            if (searchField.value.trim() !== currentQuery) return;
-            console.log('search', query, 'results', plants.length, plants.slice(0, 3));
+            if (formEl?.requestSubmit) formEl.requestSubmit();
+            else formEl?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+            });
 
-            plantList.innerHTML = plants.map(p => `
-                <option value="${p.name}"
-                        data-water="${p.water_frequency || ''}"
-                        data-sunlight="${p.sunlight_hours || ''}"
-                        data-soil="${p.soil_type || ''}">
-                </option>
-            `).join('');
-            const parent = plantList.parentNode;
-            parent.removeChild(plantList); 
-            parent.appendChild(plantList);
+            const existing = JSON.parse(localStorage.getItem('my_plants') || '[]');
+            existing.push(payload);
+            localStorage.setItem('my_plants', JSON.stringify(existing));
+            
+            // Redirect to the dashboard
+            window.location.href = '/dashboard'; 
+        });
+    }
 
-            const box = document.getElementById('plant-suggestions');
-            if (box) {
-                if (!plants.length) { 
-                    box.classList.add('hidden'); 
-                    box.innerHTML = ''; 
-                    return; 
-                }
-                box.innerHTML = plants.slice(0, 10).map(p => `
-                    <button type="button" class="w-full text-left px-3 py-2 hover:bg-sage-green/10"
-                            data-name="${p.name}"
-                            data-water="${p.water_frequency || ''}"
-                            data-sunlight="${p.sunlight_hours || ''}"
-                            data-soil="${p.soil_type || ''}">
-                        ${p.name}
-                    </button>
-                `).join('');
-                box.classList.remove('hidden');
+    // --- 2. SEARCH INPUT HANDLER (Attached only ONCE for debounced fetching) ---
+    if (searchField) {
+        searchField.setAttribute('autocomplete', 'off'); 
+
+        searchField.addEventListener('input', (event) => {
+            clearTimeout(debounceTimer);
+            const query = event.target.value.trim();
+            if (query.length < 2) {
+                plantList.innerHTML = '';
+                const box = document.getElementById('plant-suggestions');
+                if (box) { box.classList.add('hidden'); box.innerHTML = ''; }
+                return;
             }
-        } catch (e) {
-            console.warn('search error', e);
-        }
-    }, 200);
-});
 
+            debounceTimer = setTimeout(async () => {
+                const currentQuery = query;
+                try {
+                    const res = await fetch('/api/plants/search?q=' + encodeURIComponent(query));
+                    if (!res.ok) return;
+                    const plants = await res.json();
+                    
+                    // Fallback stub for testing if DB is empty
+                    if (!plants.length) { console.log('Using stub'); plants.push({name: 'Monstera'}, {name: 'Corn'}); }
+                    
+                    if (searchField.value.trim() !== currentQuery) return;
+                    console.log('search', query, 'results', plants.length, plants.slice(0, 3));
 
+                    // Populate datalist
+                    plantList.innerHTML = plants.map(p => `
+                        <option value="${p.name}"
+                                data-water="${p.water_frequency || ''}"
+                                data-sunlight="${p.sunlight_hours || ''}"
+                                data-soil="${p.soil_type || ''}">
+                        </option>
+                    `).join('');
+                    const parent = plantList.parentNode;
+                    parent.removeChild(plantList); 
+                    parent.appendChild(plantList);
+
+                    // Custom suggestions dropdown
+                    const box = document.getElementById('plant-suggestions');
+                    if (box) {
+                        if (!plants.length) { 
+                            box.classList.add('hidden'); 
+                            box.innerHTML = ''; 
+                            return; 
+                        }
+                        box.innerHTML = plants.slice(0, 10).map(p => `
+                            <button type="button" class="w-full text-left px-3 py-2 hover:bg-sage-green/10"
+                                    data-name="${p.name}"
+                                    data-water="${p.water_frequency || ''}"
+                                    data-sunlight="${p.sunlight_hours || ''}"
+                                    data-soil="${p.soil_type || ''}">
+                                ${p.name}
+                            </button>
+                        `).join('');
+                        box.classList.remove('hidden');
+                    }
+                } catch (e) {
+                    console.warn('search error', e);
+                }
+            }, 200);
+        });
+        
+        // --- 3. AUTO-FILL AND SUGGESTION CLICK HANDLERS (Must be outside the input handler) ---
         searchField.addEventListener('change', () => {
-        const option = Array.from(plantList.options).find(opt => opt.value === searchField.value);
-        const box = document.getElementById('plant-suggestions');
-        if (box) { box.classList.add('hidden'); box.innerHTML = ''; }
-        if (!option) return;
-        if (option.dataset.water && waterField) waterField.value = option.dataset.water;
-        if (option.dataset.sunlight && sunlightField) sunlightField.value = option.dataset.sunlight;
-        if (option.dataset.soil && soilField) soilField.value = option.dataset.soil;
+            const option = Array.from(plantList.options).find(opt => opt.value === searchField.value);
+            const box = document.getElementById('plant-suggestions');
+            if (box) { box.classList.add('hidden'); box.innerHTML = ''; }
+            if (!option) return;
+            if (option.dataset.water && waterField) waterField.value = option.dataset.water;
+            if (option.dataset.sunlight && sunlightField) sunlightField.value = option.dataset.sunlight;
+            if (option.dataset.soil && soilField) soilField.value = option.dataset.soil;
         });
 
         document.getElementById('plant-suggestions')?.addEventListener('click', (e) => {
-        const btn = e.target.closest('button');
-        if (!btn) return;
-        searchField.value = btn.dataset.name || '';
-        if (btn.dataset.water && waterField) waterField.value = btn.dataset.water;
-        if (btn.dataset.sunlight && sunlightField) sunlightField.value = btn.dataset.sunlight;
-        if (btn.dataset.soil && soilField) soilField.value = btn.dataset.soil;
-        const box = document.getElementById('plant-suggestions');
-        if (box) { box.classList.add('hidden'); box.innerHTML = ''; }
-        searchField.dispatchEvent(new Event('change'));
+            const btn = e.target.closest('button');
+            if (!btn) return;
+            searchField.value = btn.dataset.name || '';
+            if (btn.dataset.water && waterField) waterField.value = btn.dataset.water;
+            if (btn.dataset.sunlight && sunlightField) sunlightField.value = btn.dataset.sunlight;
+            if (btn.dataset.soil && soilField) soilField.value = btn.dataset.soil;
+            const box = document.getElementById('plant-suggestions');
+            if (box) { box.classList.add('hidden'); box.innerHTML = ''; }
+            searchField.dispatchEvent(new Event('change'));
         });
+    }
 
+    // --- 4. Stepper and Final Init Logic ---
+    if (typeof lucide !== 'undefined' && lucide.createIcons) {
+        lucide.createIcons();
+    }
 
+    // Stepper Logic (MVP - simple transition)
+    let currentStep = 1;
+    const totalSteps = 3;
+    const formContainer = document.getElementById('plant-form-container');
 
-    lucide.createIcons();
+    window.nextStep = function() {
+        if (currentStep < totalSteps) {
+            currentStep++;
+            updateFormView();
+        }
+    }
 
-            // Stepper Logic (MVP - simple transition)
-            let currentStep = 1;
-            const totalSteps = 3;
-            const formContainer = document.getElementById('plant-form-container');
+    window.prevStep = function() {
+        if (currentStep > 1) {
+            currentStep--;
+            updateFormView();
+        }
+    }
 
-            window.nextStep = function() {
-                if (currentStep < totalSteps) {
-                    currentStep++;
-                    updateFormView();
-                }
+    function updateFormView() {
+        if (formContainer) {
+            formContainer.style.transform = `translateX(-${(currentStep - 1) * 100}%)`;
+        }
+        document.querySelectorAll('.step-indicator').forEach((el, index) => {
+            if (index < currentStep) {
+                el.classList.add('bg-sage-green', 'text-forest-dark');
+                el.classList.remove('bg-wood-light', 'dark:bg-wood-dark', 'text-gray-500');
+            } else {
+                el.classList.remove('bg-sage-green', 'text-forest-dark');
+                el.classList.add('bg-wood-light', 'dark:bg-wood-dark', 'text-gray-500');
             }
-
-            window.prevStep = function() {
-                if (currentStep > 1) {
-                    currentStep--;
-                    updateFormView();
-                }
-            }
-
-            function updateFormView() {
-                formContainer.style.transform = `translateX(-${(currentStep - 1) * 100}%)`;
-                document.querySelectorAll('.step-indicator').forEach((el, index) => {
-                    if (index < currentStep) {
-                        el.classList.add('bg-sage-green', 'text-forest-dark');
-                        el.classList.remove('bg-wood-light', 'dark:bg-wood-dark', 'text-gray-500');
-                    } else {
-                        el.classList.remove('bg-sage-green', 'text-forest-dark');
-                        el.classList.add('bg-wood-light', 'dark:bg-wood-dark', 'text-gray-500');
-                    }
-                });
-                
-                // Button visibility
-                document.getElementById('prev-button').classList.toggle('hidden', currentStep === 1);
-                document.getElementById('next-button').classList.toggle('hidden', currentStep === totalSteps);
-                document.getElementById('save-button').classList.toggle('hidden', currentStep !== totalSteps);
-            }
-
-            updateFormView(); // Initial setup
         });
+        
+        // Button visibility
+        document.getElementById('prev-button')?.classList.toggle('hidden', currentStep === 1);
+        document.getElementById('next-button')?.classList.toggle('hidden', currentStep === totalSteps);
+        document.getElementById('save-button')?.classList.toggle('hidden', currentStep !== totalSteps);
+    }
+
+    updateFormView(); // Initial setup
+});
+
     </script>
 </head>
 <body class="bg-cream-light text-forest-text dark:bg-forest-dark dark:text-sage-light min-h-screen p-4">
 
     <header class="max-w-4xl mx-auto flex justify-between items-center h-16 mb-8">
-        <a href="dashboard.html" class="text-xl font-serif font-bold text-sage-green flex items-center space-x-2">
+        <a href="/dashboard" class="text-xl font-serif font-bold text-sage-green flex items-center space-x-2">
             <i data-lucide="chevron-left" class="w-5 h-5"></i>
             <span>Back to Dashboard</span>
         </a>
@@ -214,7 +264,7 @@
             </div>
         </div>
 
-        <form class="overflow-hidden">
+        <form id="add-plant-form" class="overflow-hidden">
             <div id="plant-form-container" class="flex transition-transform duration-500 ease-in-out">
 
                 
@@ -309,22 +359,21 @@
 
                 </div>
             </div>
+            <div class="flex justify-between mt-8 pt-6 border-t border-wood-light dark:border-wood-dark/50">
+                <button id="prev-button" type="button" onclick="prevStep()" class="px-6 py-2 bg-wood-light dark:bg-wood-dark text-forest-text dark:text-sage-light font-semibold rounded-full hover:bg-wood-dark/30 dark:hover:bg-wood-dark/70 transition duration-300">
+                    <i data-lucide="chevron-left" class="w-5 h-5 inline mr-1"></i>
+                    Previous
+                </button>
+                <button id="next-button" type="button" onclick="nextStep()" class="px-6 py-2 bg-sage-green text-forest-dark font-bold rounded-full shadow-md hover:shadow-lg transition-all transform hover:scale-[1.02]">
+                    Next Step
+                    <i data-lucide="chevron-right" class="w-5 h-5 inline ml-1"></i>
+                </button>
+                <button id="save-button" type="submit" form="add-plant-form" class="hidden px-8 py-3 bg-sage-green text-forest-dark font-bold text-lg rounded-full shadow-md hover:shadow-xl transition-all transform hover:scale-[1.02]">
+                    <i data-lucide="plus" class="w-5 h-5 inline mr-1"></i>
+                    Add to Dashboard
+                </button>
+            </div>
         </form>
-
-        <div class="flex justify-between mt-8 pt-6 border-t border-wood-light dark:border-wood-dark/50">
-            <button id="prev-button" type="button" onclick="prevStep()" class="px-6 py-2 bg-wood-light dark:bg-wood-dark text-forest-text dark:text-sage-light font-semibold rounded-full hover:bg-wood-dark/30 dark:hover:bg-wood-dark/70 transition duration-300">
-                <i data-lucide="chevron-left" class="w-5 h-5 inline mr-1"></i>
-                Previous
-            </button>
-            <button id="next-button" type="button" onclick="nextStep()" class="px-6 py-2 bg-sage-green text-forest-dark font-bold rounded-full shadow-md hover:shadow-lg transition-all transform hover:scale-[1.02]">
-                Next Step
-                <i data-lucide="chevron-right" class="w-5 h-5 inline ml-1"></i>
-            </button>
-            <button id="save-button" type="submit" class="hidden px-8 py-3 bg-sage-green text-forest-dark font-bold text-lg rounded-full shadow-md hover:shadow-xl transition-all transform hover:scale-[1.02]">
-                <i data-lucide="plus" class="w-5 h-5 inline mr-1"></i>
-                Add to Dashboard
-            </button>
-        </div>
     </main>
 </body>
 </html>

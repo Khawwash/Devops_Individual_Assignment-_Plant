@@ -63,55 +63,6 @@
                 }
             }
         }
-
-        // JavaScript for App Logic
-        document.addEventListener('DOMContentLoaded', () => {
-            const htmlEl = document.documentElement;
-            const sidebarEl = document.getElementById('sidebar');
-            const menuButton = document.getElementById('menu-button');
-            const overlay = document.getElementById('overlay');
-            const addPlantModal = document.getElementById('add-plant-modal');
-
-            // --- Dark Mode Logic (Copied from Landing Page) ---
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const savedTheme = localStorage.getItem('theme');
-            let isDarkMode = savedTheme === 'dark' || (savedTheme === null && prefersDark);
-
-            if (isDarkMode) { htmlEl.classList.add('dark'); }
-
-            window.toggleDarkMode = function() {
-                isDarkMode = !isDarkMode;
-                if (isDarkMode) {
-                    htmlEl.classList.add('dark');
-                    localStorage.setItem('theme', 'dark');
-                } else {
-                    htmlEl.classList.remove('dark');
-                    localStorage.setItem('theme', 'light');
-                }
-                lucide.createIcons();
-            };
-
-            // --- Mobile Sidebar Toggle ---
-            const toggleSidebar = () => {
-                sidebarEl.classList.toggle('sidebar-open');
-                overlay.classList.toggle('hidden');
-            };
-
-            menuButton.addEventListener('click', toggleSidebar);
-            overlay.addEventListener('click', toggleSidebar);
-
-
-            // --- Modal Functions (for Add Plant) ---
-            window.openAddPlantModal = function() {
-                addPlantModal.classList.remove('hidden');
-            };
-            window.closeAddPlantModal = function() {
-                addPlantModal.classList.add('hidden');
-            };
-            
-            // Initial icon rendering
-            lucide.createIcons();
-        });
     </script>
 </head>
 <body class="bg-cream-light text-forest-text dark:bg-forest-dark dark:text-sage-light min-h-screen flex">
@@ -189,88 +140,26 @@
             </div>
         </section>
 
-        <!-- 4. Owner's Dashboard: Plant Grid -->
+        
         <section class="mb-12">
-            <h2 class="text-2xl font-bold mb-6 text-forest-text dark:text-sage-light">My Current Plants (4)</h2>
+            
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
 
-                <!-- Plant Card 1 (Happy) -->
-                <div class="bg-white dark:bg-wood-dark/80 rounded-2xl shadow-soft dark:shadow-soft-dark overflow-hidden transition duration-300 hover:scale-[1.02] cursor-pointer border border-green-500/30">
-                    <div class="h-48 relative">
-                        <img src="https://placehold.co/600x400/A8C999/0F1D13?text=Monstera" alt="Monstera Deliciosa" class="w-full h-full object-cover">
-                        <span class="absolute top-3 right-3 text-xs font-bold px-3 py-1 rounded-full bg-green-600 text-white flex items-center space-x-1">
-                            <i data-lucide="check-circle" class="w-4 h-4"></i>
-                            <span>Happy</span>
-                        </span>
-                    </div>
-                    <div class="p-4 space-y-2">
-                        <h3 class="text-xl font-semibold text-forest-text dark:text-sage-light">Monstera Deliciosa</h3>
-                        <div class="text-sm text-gray-600 dark:text-gray-300 flex justify-between">
-                            <span class="flex items-center space-x-1"><i data-lucide="droplet" class="w-4 h-4 text-blue-500"></i><span>Water in 2 days</span></span>
-                            <span class="flex items-center space-x-1"><i data-lucide="sun" class="w-4 h-4 text-yellow-600"></i><span>Bright Indirect</span></span>
-                        </div>
-                        <progress class="w-full h-1 appearance-none rounded-full" value="80" max="100" style="accent-color: #A8C999;"></progress>
-                    </div>
+                
+                <div class="col-span-full"> 
+                    
+                    <h2 class="text-2xl font-bold mb-6 text-forest-text dark:text-sage-light"> 
+                        My Current Plants (<span id="plant-count">0</span>) 
+                    </h2> 
+
+                    <div id="my-plants-grid" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                    </div> 
                 </div>
 
-                <!-- Plant Card 2 (Thirsty/Urgent) -->
-                <div class="bg-white dark:bg-wood-dark/80 rounded-2xl shadow-soft dark:shadow-soft-dark overflow-hidden transition duration-300 hover:scale-[1.02] cursor-pointer border border-red-500/30">
-                    <div class="h-48 relative">
-                        <img src="https://placehold.co/600x400/F0E0D0/4F3A2C?text=Fiddle+Leaf" alt="Fiddle Leaf Fig" class="w-full h-full object-cover">
-                         <span class="absolute top-3 right-3 text-xs font-bold px-3 py-1 rounded-full bg-red-600 text-white flex items-center space-x-1">
-                            <i data-lucide="alert-circle" class="w-4 h-4"></i>
-                            <span>Urgent!</span>
-                        </span>
-                    </div>
-                    <div class="p-4 space-y-2">
-                        <h3 class="text-xl font-semibold text-forest-text dark:text-sage-light">Fiddle Leaf Fig</h3>
-                        <div class="text-sm text-gray-600 dark:text-gray-300 flex justify-between">
-                            <span class="flex items-center space-x-1 text-red-600 dark:text-red-400 font-semibold"><i data-lucide="droplet" class="w-4 h-4"></i><span>Water Now!</span></span>
-                            <span class="flex items-center space-x-1"><i data-lucide="sun" class="w-4 h-4 text-yellow-600"></i><span>Medium Light</span></span>
-                        </div>
-                        <progress class="w-full h-1 appearance-none rounded-full" value="20" max="100" style="accent-color: #EF4444;"></progress>
-                    </div>
-                </div>
-
-                <!-- Plant Card 3 (Fed) -->
-                <div class="bg-white dark:bg-wood-dark/80 rounded-2xl shadow-soft dark:shadow-soft-dark overflow-hidden transition duration-300 hover:scale-[1.02] cursor-pointer border border-blue-500/30">
-                    <div class="h-48 relative">
-                        <img src="https://placehold.co/600x400/B0C4DE/0F1D13?text=Snake+Plant" alt="Sansevieria" class="w-full h-full object-cover">
-                         <span class="absolute top-3 right-3 text-xs font-bold px-3 py-1 rounded-full bg-blue-600 text-white flex items-center space-x-1">
-                            <i data-lucide="zap" class="w-4 h-4"></i>
-                            <span>Fed</span>
-                        </span>
-                    </div>
-                    <div class="p-4 space-y-2">
-                        <h3 class="text-xl font-semibold text-forest-text dark:text-sage-light">Sansevieria</h3>
-                        <div class="text-sm text-gray-600 dark:text-gray-300 flex justify-between">
-                            <span class="flex items-center space-x-1"><i data-lucide="droplet" class="w-4 h-4 text-blue-500"></i><span>Water in 7 days</span></span>
-                            <span class="flex items-center space-x-1"><i data-lucide="sun" class="w-4 h-4 text-gray-400"></i><span>Low Light</span></span>
-                        </div>
-                        <progress class="w-full h-1 appearance-none rounded-full" value="95" max="100" style="accent-color: #A8C999;"></progress>
-                    </div>
-                </div>
-
-                 <!-- Plant Card 4 (Needs Fertilizer) -->
-                <div class="bg-white dark:bg-wood-dark/80 rounded-2xl shadow-soft dark:shadow-soft-dark overflow-hidden transition duration-300 hover:scale-[1.02] cursor-pointer border border-orange-500/30">
-                    <div class="h-48 relative">
-                        <img src="https://placehold.co/600x400/D0F0C0/1A3320?text=Pothos" alt="Golden Pothos" class="w-full h-full object-cover">
-                         <span class="absolute top-3 right-3 text-xs font-bold px-3 py-1 rounded-full bg-orange-500 text-white flex items-center space-x-1">
-                            <i data-lucide="fertilize" class="w-4 h-4"></i>
-                            <span>Fertilize</span>
-                        </span>
-                    </div>
-                    <div class="p-4 space-y-2">
-                        <h3 class="text-xl font-semibold text-forest-text dark:text-sage-light">Golden Pothos</h3>
-                        <div class="text-sm text-gray-600 dark:text-gray-300 flex justify-between">
-                            <span class="flex items-center space-x-1"><i data-lucide="droplet" class="w-4 h-4 text-blue-500"></i><span>Water in 3 days</span></span>
-                            <span class="flex items-center space-x-1"><i data-lucide="sun" class="w-4 h-4 text-yellow-600"></i><span>Medium Light</span></span>
-                        </div>
-                        <progress class="w-full h-1 appearance-none rounded-full" value="65" max="100" style="accent-color: #A8C999;"></progress>
-                    </div>
-                </div>
             </div>
         </section>
+
+
 
         <!-- 5. Simulated Plant Database Search -->
         <section class="mt-12 bg-wood-light/50 dark:bg-wood-dark/50 p-6 rounded-2xl shadow-soft dark:shadow-soft-dark">
@@ -285,3 +174,145 @@
 
     </div>
 
+    <!-- FINAL SCRIPT BLOCK FOR ALL APP LOGIC -->
+    <script>
+        // JavaScript for App Logic
+        document.addEventListener('DOMContentLoaded', () => {
+            const htmlEl = document.documentElement;
+            const sidebarEl = document.getElementById('sidebar');
+            const menuButton = document.getElementById('menu-button');
+            const overlay = document.getElementById('overlay');
+
+            // --- Dark Mode Logic ---
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const savedTheme = localStorage.getItem('theme');
+            let isDarkMode = savedTheme === 'dark' || (savedTheme === null && prefersDark);
+
+            if (isDarkMode) { htmlEl.classList.add('dark'); }
+
+            window.toggleDarkMode = function() {
+                isDarkMode = !isDarkMode;
+                if (isDarkMode) {
+                    htmlEl.classList.add('dark');
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    htmlEl.classList.remove('dark');
+                    localStorage.setItem('theme', 'light');
+                }
+                lucide.createIcons();
+            };
+
+            // --- Mobile Sidebar Toggle ---
+            const toggleSidebar = () => {
+                sidebarEl.classList.toggle('sidebar-open');
+                overlay.classList.toggle('hidden');
+            };
+
+            menuButton.addEventListener('click', toggleSidebar);
+            overlay.addEventListener('click', toggleSidebar);
+
+            // Initial icon rendering
+            lucide.createIcons();
+            
+            // =============================================================
+            // Plant Dashboard Renderer (Logic for displaying saved plants)
+            // =============================================================
+            const grid = document.getElementById('my-plants-grid');
+            const countEl = document.getElementById('plant-count');
+            
+            // [FIX] Guard against missing critical elements
+            if (!grid) {
+                console.error("Critical Dashboard element missing: #my-plants-grid. Cannot render.");
+                return;
+            }
+
+            // Retrieve and parse the saved plants from localStorage
+            const plants = JSON.parse(localStorage.getItem('my_plants') || '[]');
+            
+            // [FIX] Only update the count if the element exists
+            if (countEl) {
+                countEl.textContent = plants.length;
+            }
+
+            // Helper function to calculate the difference in days between two dates
+            const daysBetween = (from, to) => {
+                const ms = new Date(to).setHours(0,0,0,0) - new Date(from).setHours(0,0,0,0);
+                return Math.round(ms / (1000*60*60*24));
+            };
+            
+            const todayISO = new Date().toISOString().slice(0,10);
+
+            // Function to generate the HTML for a single plant card
+            const cardHTML = (p) => {
+                // --- Water Calculation Logic ---
+                const freqDays = Number.isFinite(+p.water_frequency) ? Math.max(0, +p.water_frequency) : null;
+                const last = p.last_watered || todayISO; // Use today if last watered date is missing
+                
+                const daysSince = daysBetween(last, todayISO);
+                const daysLeft = freqDays != null ? Math.max(0, freqDays - daysSince) : null;
+                
+                // --- Status Label Logic ---
+                const statusLabel = (() => {
+                    if (daysLeft == null) return '';
+                    if (daysLeft <= 0) return '<span class="ml-2 inline-block text-xs px-2 py-1 rounded-full bg-red-600 text-white">Water Now!</span>';
+                    if (daysLeft <= 2) return '<span class="ml-2 inline-block text-xs px-2 py-1 rounded-full bg-yellow-500 text-forest-dark">Soon</span>';
+                    return '<span class="ml-2 inline-block text-xs px-2 py-1 rounded-full bg-green-500 text-forest-dark">Happy</span>';
+                })();
+                
+                // --- Progress Bar Logic ---
+                const progressPct = (() => {
+                    if (freqDays == null || freqDays === 0) return 0;
+                    const used = Math.min(freqDays, Math.max(0, daysSince));
+                    return Math.round((used / freqDays) * 100);
+                })();
+
+                // --- Card HTML Structure ---
+                return `
+                    <div class="rounded-2xl overflow-hidden shadow-soft dark:shadow-soft-dark border border-wood-light/50 dark:border-wood-dark/50 bg-white dark:bg-forest-text">
+                        <div class="p-6">
+                            <div class="text-3xl font-bold text-forest-text dark:text-sage-light flex items-center">
+                                ${p.nickname || p.species || 'New Plant'}
+                                ${statusLabel}
+                            </div>
+                            <div class="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                                ${p.species || ''}${p.location ? ' • ' + p.location : ''}
+                            </div>
+                            <div class="mt-4 flex items-center text-sm text-gray-700 dark:text-gray-200 space-x-6">
+                                <div>💧 ${daysLeft == null ? '—' : daysLeft === 0 ? 'Water today' : 'Water in ' + daysLeft + ' day' + (daysLeft===1?'':'s')}</div>
+                                <div>☀️ ${p.sunlight_note || '—'}</div>
+                            </div>
+                            <!-- Progress Bar -->
+                            <div class="mt-4 h-2 bg-wood-light/60 dark:bg-wood-dark/60 rounded-full">
+                                <div class="h-2 bg-sage-green rounded-full" style="width: ${progressPct}%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            };
+
+            // Render all plants or a "No plants yet" message
+            grid.innerHTML = plants.map(cardHTML).join('') || `
+                <div class="text-gray-500 dark:text-gray-300">No plants yet. Add one from “Add a New Plant”.</div>
+            `;
+
+            // Optional: Add a Reset Button for testing
+            const resetButton = document.createElement('button');
+            resetButton.id = 'reset-plants';
+            resetButton.className = 'mt-4 px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700 transition duration-150';
+            resetButton.textContent = 'Reset All Plants (Development)';
+            
+            resetButton.addEventListener('click', () => { 
+                localStorage.removeItem('my_plants'); 
+                location.reload(); 
+            });
+            
+            // [FIX] Only append the reset button if the grid has a parent
+            // Append the reset button to the main dashboard container (which is grid's parent)
+            if (grid.parentNode) {
+                grid.parentNode.appendChild(resetButton); 
+            }
+
+        });
+    </script>
+</body>
+</html>
