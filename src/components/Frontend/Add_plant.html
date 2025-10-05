@@ -14,7 +14,8 @@
         ::-webkit-scrollbar-thumb { background: rgba(45, 68, 53, 0.5); border-radius: 10px; }
         .dark ::-webkit-scrollbar-thumb { background: rgba(214, 228, 209, 0.2); }
     </style>
-    <script>
+    <script type="text/javascript">
+
         // Custom Tailwind configuration (copied)
         tailwind.config = {
             darkMode: 'class', theme: { extend: { colors: {
@@ -26,19 +27,115 @@
 
         // --- Core Add Plant Logic ---
         document.addEventListener('DOMContentLoaded', () => {
-            const htmlEl = document.documentElement;
-            // Dark Mode Logic (copied)
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const savedTheme = localStorage.getItem('theme');
-            let isDarkMode = savedTheme === 'dark' || (savedTheme === null && prefersDark);
-            if (isDarkMode) { htmlEl.classList.add('dark'); }
-            window.toggleDarkMode = function() {
-                isDarkMode = !isDarkMode;
-                if (isDarkMode) { htmlEl.classList.add('dark'); localStorage.setItem('theme', 'dark'); } 
-                else { htmlEl.classList.remove('dark'); localStorage.setItem('theme', 'light'); }
-                lucide.createIcons();
-            };
-            lucide.createIcons();
+    const htmlEl = document.documentElement;
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const savedTheme = localStorage.getItem('theme');
+
+    const searchField = document.getElementById('species-search');
+    const plantList = document.getElementById('plant-options');
+    const waterField = document.getElementById('water-frequency');
+    const sunlightField = document.getElementById('sunlight-hours');
+    const soilField = document.getElementById('soil-type'); // optional, will be null for now
+    let debounceTimer;
+    let isDarkMode = savedTheme === 'dark' || (savedTheme === null && prefersDark);
+
+    if (isDarkMode) htmlEl.classList.add('dark');
+
+    window.toggleDarkMode = function () {
+        isDarkMode = !isDarkMode;
+        if (isDarkMode) {
+            htmlEl.classList.add('dark');
+            localStorage.setItem('theme', 'dark');
+        } else {
+            htmlEl.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
+        }
+        lucide.createIcons();
+    };
+
+        searchField.setAttribute('autocomplete', 'off'); // helps some browsers
+
+    searchField.addEventListener('input', (event) => {
+    clearTimeout(debounceTimer);
+    const query = event.target.value.trim();
+    if (query.length < 2) {
+        plantList.innerHTML = '';
+        const box = document.getElementById('plant-suggestions');
+        if (box) { box.classList.add('hidden'); box.innerHTML = ''; }
+        return;
+    }
+    debounceTimer = setTimeout(async () => {
+        const currentQuery = query;
+        try {
+            const res = await fetch('/api/plants/search?q=' + encodeURIComponent(query));
+            if (!res.ok) return;
+            const plants = await res.json();
+            if (!plants.length) { console.log('Using stub'); plants.push({name: 'Monstera'}, {name: 'Corn'}); }
+            
+            if (searchField.value.trim() !== currentQuery) return;
+            console.log('search', query, 'results', plants.length, plants.slice(0, 3));
+
+            plantList.innerHTML = plants.map(p => `
+                <option value="${p.name}"
+                        data-water="${p.water_frequency || ''}"
+                        data-sunlight="${p.sunlight_hours || ''}"
+                        data-soil="${p.soil_type || ''}">
+                </option>
+            `).join('');
+            const parent = plantList.parentNode;
+            parent.removeChild(plantList); 
+            parent.appendChild(plantList);
+
+            const box = document.getElementById('plant-suggestions');
+            if (box) {
+                if (!plants.length) { 
+                    box.classList.add('hidden'); 
+                    box.innerHTML = ''; 
+                    return; 
+                }
+                box.innerHTML = plants.slice(0, 10).map(p => `
+                    <button type="button" class="w-full text-left px-3 py-2 hover:bg-sage-green/10"
+                            data-name="${p.name}"
+                            data-water="${p.water_frequency || ''}"
+                            data-sunlight="${p.sunlight_hours || ''}"
+                            data-soil="${p.soil_type || ''}">
+                        ${p.name}
+                    </button>
+                `).join('');
+                box.classList.remove('hidden');
+            }
+        } catch (e) {
+            console.warn('search error', e);
+        }
+    }, 200);
+});
+
+
+        searchField.addEventListener('change', () => {
+        const option = Array.from(plantList.options).find(opt => opt.value === searchField.value);
+        const box = document.getElementById('plant-suggestions');
+        if (box) { box.classList.add('hidden'); box.innerHTML = ''; }
+        if (!option) return;
+        if (option.dataset.water && waterField) waterField.value = option.dataset.water;
+        if (option.dataset.sunlight && sunlightField) sunlightField.value = option.dataset.sunlight;
+        if (option.dataset.soil && soilField) soilField.value = option.dataset.soil;
+        });
+
+        document.getElementById('plant-suggestions')?.addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        searchField.value = btn.dataset.name || '';
+        if (btn.dataset.water && waterField) waterField.value = btn.dataset.water;
+        if (btn.dataset.sunlight && sunlightField) sunlightField.value = btn.dataset.sunlight;
+        if (btn.dataset.soil && soilField) soilField.value = btn.dataset.soil;
+        const box = document.getElementById('plant-suggestions');
+        if (box) { box.classList.add('hidden'); box.innerHTML = ''; }
+        searchField.dispatchEvent(new Event('change'));
+        });
+
+
+
+    lucide.createIcons();
 
             // Stepper Logic (MVP - simple transition)
             let currentStep = 1;
@@ -118,9 +215,10 @@
         </div>
 
         <form class="overflow-hidden">
-            <div id="plant-form-container" class="flex transition-transform duration-500 ease-in-out w-[300%]">
+            <div id="plant-form-container" class="flex transition-transform duration-500 ease-in-out">
+
                 
-                <div class="w-1/3 p-4 shrink-0 space-y-6">
+                <div class="w-full p-4 shrink-0 space-y-6">
                     <h2 class="text-2xl font-semibold text-sage-green mb-4">Step 1: Plant Details</h2>
                     
                     <div>
@@ -135,8 +233,12 @@
                         <label for="species-search" class="block text-sm font-medium mb-2 text-gray-700 dark:text-sage-light">Species Lookup (Myriad of Species)</label>
                         <div class="relative">
                             <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-sage-green"></i>
-                            <input type="text" id="species-search" placeholder="Search for Monstera, Succulent, etc." required class="w-full p-3 pl-10 border border-wood-light dark:border-wood-dark rounded-xl focus:ring-sage-green focus:border-sage-green dark:bg-forest-dark/50 dark:text-sage-light transition">
+                            <input type="text" id="species-search" name="species" list="plant-options" placeholder="Search for Monstera, Succulent, etc." required class="w-full p-3 pl-10 border border-wood-light dark:border-wood-dark rounded-xl focus:ring-sage-green focus:border-sage-green dark:bg-forest-dark/50 dark:text-sage-light transition">
+                            <datalist id="plant-options"></datalist>
+                        <div id="plant-suggestions" class="absolute z-50 w-full mt-2 bg-white dark:bg-forest-text border border-wood-light dark:border-wood-dark rounded-xl max-h-40 overflow-y-auto shadow-sm"></div>
+
                         </div>
+                        
                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Selecting a species pre-fills the ideal care plan.</p>
                     </div>
 
@@ -149,7 +251,7 @@
                     </div>
                 </div>
 
-                <div class="w-1/3 p-4 shrink-0 space-y-6">
+                <div class="w-full p-4 shrink-0 space-y-6">
                     <h2 class="text-2xl font-semibold text-sage-green mb-4">Step 2: Define Care Plan</h2>
 
                     <div>
@@ -181,7 +283,7 @@
                     </div>
                 </div>
 
-                <div class="w-1/3 p-4 shrink-0 space-y-6">
+                <div class="w-full p-4 shrink-0 space-y-6">
                     <h2 class="text-2xl font-semibold text-sage-green mb-4">Step 3: Photo & Finish</h2>
                     
                     <div>
@@ -210,11 +312,11 @@
         </form>
 
         <div class="flex justify-between mt-8 pt-6 border-t border-wood-light dark:border-wood-dark/50">
-            <button id="prev-button" onclick="prevStep()" class="px-6 py-2 bg-wood-light dark:bg-wood-dark text-forest-text dark:text-sage-light font-semibold rounded-full hover:bg-wood-dark/30 dark:hover:bg-wood-dark/70 transition duration-300">
+            <button id="prev-button" type="button" onclick="prevStep()" class="px-6 py-2 bg-wood-light dark:bg-wood-dark text-forest-text dark:text-sage-light font-semibold rounded-full hover:bg-wood-dark/30 dark:hover:bg-wood-dark/70 transition duration-300">
                 <i data-lucide="chevron-left" class="w-5 h-5 inline mr-1"></i>
                 Previous
             </button>
-            <button id="next-button" onclick="nextStep()" class="px-6 py-2 bg-sage-green text-forest-dark font-bold rounded-full shadow-md hover:shadow-lg transition-all transform hover:scale-[1.02]">
+            <button id="next-button" type="button" onclick="nextStep()" class="px-6 py-2 bg-sage-green text-forest-dark font-bold rounded-full shadow-md hover:shadow-lg transition-all transform hover:scale-[1.02]">
                 Next Step
                 <i data-lucide="chevron-right" class="w-5 h-5 inline ml-1"></i>
             </button>

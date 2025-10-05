@@ -6,11 +6,13 @@ from typing import Dict, Iterable, List, Sequence, Tuple
 import kagglehub
 import pandas as pd
 import re 
+from src.data.database import persist_sqlite
 
 pd.options.mode.copy_on_write = True
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
+
 
 DATASETS: Dict[str, Dict[str, object]] = {
     "plant_health": {
@@ -51,6 +53,15 @@ DATASETS: Dict[str, Dict[str, object]] = {
             "watering.csv",
         ],
     },
+
+    "companion_plants": {
+        "ref": "aramacus/companion-plants",
+        "preferred_files": [
+            "companion_plants.csv", 
+            "Companion Plants.csv", 
+            "data.csv" 
+        ],
+    },
 }
 
 KEY_PRIORITY: Sequence[Tuple[str, ...]] = (
@@ -77,6 +88,41 @@ def download_datasets(config: Dict[str, Dict[str, object]]) -> Dict[str, Path]:
         paths[name] = path
         logger.info("Downloaded %s dataset to %s", name, path)
     return paths
+
+
+def build_plant_index(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    candidates = [
+            "name", "common_name", "scientific_name", "species",
+            "plant_name", "plant", "companion", "latin_name", "source_node",
+            "crop", "crop_type", "plant_health_status"
+        ]
+    for c in candidates:
+        if c not in df.columns:
+            df[c] = pd.NA
+    idx = create_index_df(df, candidates)
+    return idx
+
+
+def pick_name(row, candidates: list) -> str:
+    for c in candidates:
+        v = row.get(c)
+        if pd.notna(v) and str(v).strip():
+            return str(v).strip()
+    return ""
+
+def create_index_df(df: pd.DataFrame, candidates: list) -> pd.DataFrame:
+    idx = pd.DataFrame({
+        "name": df.apply(lambda row: pick_name(row, candidates), axis=1),
+        "water_frequency": df.get("water_frequency", pd.Series([pd.NA] * len(df))),
+        "sunlight_hours": df.get("sunlight_hours", pd.Series([pd.NA] * len(df))),
+        "soil_type": df.get("soil_type", pd.Series([pd.NA] * len(df))),
+    })
+    idx["name"] = idx["name"].astype(str).str.strip()
+    idx = idx[idx["name"].ne("")].drop_duplicates(subset=["name"]).reset_index(drop=True)
+    print(idx["name"].head())
+    assert not idx["name"].apply(callable).any()
+    return idx
 
 
 def choose_csv(base: Path, preferred: Iterable[str]) -> Path:
@@ -196,27 +242,35 @@ def persist(df: pd.DataFrame, output: Path) -> Path:
     return output
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args():
     parser = argparse.ArgumentParser(description="Download, clean, and merge plant datasets.")
-    parser.add_argument(
-        "--output",
-        type=Path,
-        default=Path("data/unified_plants.parquet"),
-        help="Destination file (.csv or .parquet).",
-    )
+    parser.add_argument("--output", 
+                        type=Path, 
+                        default=Path("data/unified_plants.parquet"),
+                        help="Destination file (.csv or .parquet).")
+    parser.add_argument("--sqlite", 
+                        type=Path, 
+                        default=Path("src/data/Plants.db"),
+                        help="SQLite DB path for plant index.")
     return parser.parse_args()
-
 
 def main() -> None:
     args = parse_args()
+    
+    only = {"companion_plants": DATASETS["companion_plants"]}
     download_paths = download_datasets(DATASETS)
-    frames = {
-        name: load_clean_dataset(name, base_path, DATASETS[name])
-        for name, base_path in download_paths.items()
-    }
+    frames = {name: load_clean_dataset(name, base_path, DATASETS[name]) for name, base_path in download_paths.items()}
+    
     unified = merge_dataframes(frames)
     summarize(unified)
+    
     persist(unified, args.output)
+    
+    plant_index = build_plant_index(unified)
+    persist_sqlite(plant_index, Path("src/data/Plant.db"))
+
+
+
 
 
 if __name__ == "__main__":

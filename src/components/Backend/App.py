@@ -1,9 +1,17 @@
-# src/components/Backend/App.py
 from pathlib import Path
 from flask import Flask, request, jsonify, redirect, send_from_directory, url_for
 from src.data.Auth import create_user, init_db, authenticate_user
+import sqlite3
+import logging
+
 
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "Frontend"
+PLANT_DB_PATH = Path(__file__).resolve().parents[2] / "data" / "Plant.db"
+
+def get_db():
+    con = sqlite3.connect(PLANT_DB_PATH, check_same_thread=False)
+    con.row_factory = sqlite3.Row
+    return con
 
 app = Flask(__name__)
 init_db()
@@ -21,6 +29,38 @@ def login_form():
 @app.get("/Sign_up")
 def signup_form():
     return send_from_directory(FRONTEND_DIR, "Sign_up.html")
+
+@app.get("/api/debug/plant-path")
+def debug_plant_path(): return jsonify({"exists": PLANT_DB_PATH.exists(), "path": str(PLANT_DB_PATH)})
+
+
+
+@app.get("/api/plants/search")
+@app.get("/api/plants/search")
+def search_plants():
+    q = request.args.get("q", "").strip()
+    if not q or not PLANT_DB_PATH.exists():
+        return jsonify([])
+    try:
+        con = get_db()
+        cur = con.cursor()
+        
+        cur.execute("""
+            SELECT name, water_frequency, sunlight_hours, soil_type
+            FROM plants
+            WHERE name LIKE ? COLLATE NOCASE
+            LIMIT 25
+        """, (f"%{q}%",))
+        
+        rows = cur.fetchall()
+        con.close()
+        
+        return jsonify([dict(r) for r in rows])
+    except Exception:
+        logging.exception("Failed to query plants")
+        return jsonify([])
+
+
 
 @app.post("/signup")
 def signup():
@@ -65,3 +105,5 @@ def add_plant():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
+
