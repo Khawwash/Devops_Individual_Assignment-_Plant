@@ -1,0 +1,10 @@
+# App dependencies
+flask
+requests
+pandas
+kagglehub
+python-dotenv
+cryptography
+
+# Note: sqlite3 is part of Python's standard library and
+# should not be installed via pip.
