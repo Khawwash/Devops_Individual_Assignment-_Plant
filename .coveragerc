@@ -1,0 +1,7 @@
+[run]
+omit =
+    src/components/Backend/App.py
+    src/components/Backend/wsgi.py
+    src/data/Auth.py
+    src/data/database.py
+    */__init__.py
