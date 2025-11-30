@@ -1,0 +1,23 @@
+version: "3.9"
+services:
+  api:
+    image: plants-api:dev
+    ports: ["3000:3000"]
+    environment:
+      - FLASK_ENV=production
+      - PORT=3000
+      - PLANT_DB_PATH=/data/Plant.db
+    volumes:
+      - ./data:/data
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports: ["9090:9090"]
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on: [api]
+
+  grafana:
+    image: grafana/grafana-oss:latest
+    ports: ["3001:3000"]
+    depends_on: [prometheus]
