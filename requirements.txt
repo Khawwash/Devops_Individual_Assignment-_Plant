@@ -1,4 +1,4 @@
-# App dependencies
+# App runtime dependencies
 flask
 requests
 pandas
@@ -6,9 +6,6 @@ kagglehub
 python-dotenv
 cryptography
 bcrypt
-pytest
-pytest-cov
-ruff
 gunicorn
 prometheus-client
 
