@@ -1,4 +1,4 @@
-# App dependencies
+# App runtime dependencies
 flask
 requests
 pandas
@@ -6,7 +6,8 @@ kagglehub
 python-dotenv
 cryptography
 bcrypt
-
+gunicorn
+prometheus-client
 
 # Note: sqlite3 is part of Python's standard library and
 # should not be installed via pip.

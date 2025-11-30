@@ -169,145 +169,289 @@
 
     </div>
 
+        <div id="edit-modal" class="fixed inset-0 z-50 hidden">
+        <!-- Modal Backdrop -->
+        <div class="absolute inset-0 bg-black/40"></div>
+        <!-- Modal Content -->
+        <div class="relative mx-auto mt-24 w-full max-w-md rounded-2xl bg-white dark:bg-forest-text p-6 shadow-2xl">
+            <h3 class="text-xl font-semibold mb-4 text-forest-text dark:text-sage-light">Edit Plant Details</h3>
+            
+            <form id="edit-form" class="space-y-4">
+                <!-- Hidden input for ID is not strictly needed since we use JS 'editId' state, but kept for clarity -->
+                <input type="hidden" name="id" id="edit-plant-id"> 
+
+                <div>
+                    <label class="text-sm font-medium text-gray-700 dark:text-sage-light/80">Nickname</label>
+                    <input name="nickname" type="text" class="w-full p-2 rounded-xl border border-wood-light dark:border-wood-dark dark:bg-forest-dark/50 dark:text-sage-light">
+                </div>
+                <div>
+                    <label class="text-sm font-medium text-gray-700 dark:text-sage-light/80">Species (Required)</label>
+                    <input name="species" type="text" required class="w-full p-2 rounded-xl border border-wood-light dark:border-wood-dark dark:bg-forest-dark/50 dark:text-sage-light">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-sm font-medium text-gray-700 dark:text-sage-light/80">Water Frequency (days)</label>
+                        <input name="water_frequency" type="number" min="1" class="w-full p-2 rounded-xl border border-wood-light dark:border-wood-dark dark:bg-forest-dark/50 dark:text-sage-light">
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-700 dark:text-sage-light/80">Last Watered</label>
+                        <input name="last_watered" type="date" class="w-full p-2 rounded-xl border border-wood-light dark:border-wood-dark dark:bg-forest-dark/50 dark:text-sage-light">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-sm font-medium text-gray-700 dark:text-sage-light/80">Location</label>
+                    <input name="location" type="text" class="w-full p-2 rounded-xl border border-wood-light dark:border-wood-dark dark:bg-forest-dark/50 dark:text-sage-light">
+                </div>
+                <div>
+                    <label class="text-sm font-medium text-gray-700 dark:text-sage-light/80">Notes</label>
+                    <textarea name="notes" rows="3" class="w-full p-2 rounded-xl border border-wood-light dark:border-wood-dark dark:bg-forest-dark/50 dark:text-sage-light"></textarea>
+                </div>
+                
+                <div class="flex justify-end gap-3 pt-4">
+                    <button id="edit-cancel" class="px-4 py-2 rounded-full bg-wood-light dark:bg-wood-dark text-forest-text dark:text-sage-light font-medium hover:bg-wood-light/80 dark:hover:bg-wood-dark/80 transition" type="button">Cancel</button>
+                    <button type="submit" class="px-4 py-2 rounded-full bg-sage-green text-forest-dark font-bold hover:opacity-90 transition shadow-md">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- FINAL SCRIPT BLOCK FOR ALL APP LOGIC -->
     <script>
-        // JavaScript for App Logic
-        document.addEventListener('DOMContentLoaded', () => {
-            const htmlEl = document.documentElement;
-            const sidebarEl = document.getElementById('sidebar');
-            const menuButton = document.getElementById('menu-button');
-            const overlay = document.getElementById('overlay');
+       // JavaScript for App Logic
+document.addEventListener('DOMContentLoaded', () => {
+    const htmlEl = document.documentElement;
+    const sidebarEl = document.getElementById('sidebar');
+    const menuButton = document.getElementById('menu-button');
+    const overlay = document.getElementById('overlay');
+    
+    // --- Dark Mode Logic (FIXED: Ensures dark mode applies on load) ---
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const savedTheme = localStorage.getItem('theme');
+    let isDarkMode = savedTheme === 'dark' || (savedTheme === null && prefersDark);
 
-            // --- Dark Mode Logic ---
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const savedTheme = localStorage.getItem('theme');
-            let isDarkMode = savedTheme === 'dark' || (savedTheme === null && prefersDark);
+    if (isDarkMode) { htmlEl.classList.add('dark'); }
 
-            if (isDarkMode) { htmlEl.classList.add('dark'); }
+    window.toggleDarkMode = function() {
+        isDarkMode = !isDarkMode;
+        if (isDarkMode) {
+            htmlEl.classList.add('dark');
+            localStorage.setItem('theme', 'dark');
+        } else {
+            htmlEl.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
+        }
+        // Re-render icons for theme change
+        if (window.lucide?.createIcons) lucide.createIcons();
+    };
 
-            window.toggleDarkMode = function() {
-                isDarkMode = !isDarkMode;
-                if (isDarkMode) {
-                    htmlEl.classList.add('dark');
-                    localStorage.setItem('theme', 'dark');
-                } else {
-                    htmlEl.classList.remove('dark');
-                    localStorage.setItem('theme', 'light');
-                }
-                lucide.createIcons();
-            };
+    // --- Mobile Sidebar Toggle ---
+    const toggleSidebar = () => {
+        sidebarEl.classList.toggle('sidebar-open');
+        overlay.classList.toggle('hidden');
+    };
 
-            // --- Mobile Sidebar Toggle ---
-            const toggleSidebar = () => {
-                sidebarEl.classList.toggle('sidebar-open');
-                overlay.classList.toggle('hidden');
-            };
+    menuButton.addEventListener('click', toggleSidebar);
+    overlay.addEventListener('click', toggleSidebar);
 
-            menuButton.addEventListener('click', toggleSidebar);
-            overlay.addEventListener('click', toggleSidebar);
+    // Initial icon rendering
+    if (window.lucide?.createIcons) lucide.createIcons();
+    
+    // =============================================================
+    // Plant Dashboard Renderer (Logic for displaying saved plants, including Edit/Delete)
+    // =============================================================
+    
+    // ---------- DOM elements ----------
+    const grid = document.getElementById('my-plants-grid');
+    const countEl = document.getElementById('plant-count');
+    const modal = document.getElementById('edit-modal');
+    const form = document.getElementById('edit-form');
+    let editId = null; // Stores the ID of the plant currently being edited
 
-            // Initial icon rendering
-            lucide.createIcons();
+    // ---------- Storage and Utility Functions ----------
+    const getPlants = () => {
+        const arr = JSON.parse(localStorage.getItem('my_plants') || '[]');
+        // Ensure each plant has an id 
+        return arr.map(p => (p.id ? p : { ...p, id: Date.now() + Math.random() }));
+    };
+    const setPlants = (arr) => localStorage.setItem('my_plants', JSON.stringify(arr));
+    
+    const todayISO = new Date().toISOString().slice(0,10);
+    
+    const daysBetween = (from, to) => {
+        const ms = new Date(to).setHours(0,0,0,0) - new Date(from).setHours(0,0,0,0);
+        return Math.round(ms / (1000 * 60 * 60 * 24));
+    };
+
+    // ---------- Render Function (Draws all cards) ----------
+    function render() {
+        const plants = getPlants();
+        if (countEl) countEl.textContent = plants.length;
+
+        // Remove existing reset button if it exists
+        const existingReset = document.getElementById('reset-plants');
+        if (existingReset) existingReset.remove();
+
+        const cards = plants.map(p => {
+            // --- Water Calculation Logic ---
+            const freqDays = Number.isFinite(+p.water_frequency) ? Math.max(0, +p.water_frequency) : null;
+            const last = p.last_watered || todayISO;
             
-            // =============================================================
-            // Plant Dashboard Renderer (Logic for displaying saved plants)
-            // =============================================================
-            const grid = document.getElementById('my-plants-grid');
-            const countEl = document.getElementById('plant-count');
+            const daysSince = daysBetween(last, todayISO);
+            const daysLeft = freqDays != null ? Math.max(0, freqDays - daysSince) : null;
             
-            // [FIX] Guard against missing critical elements
-            if (!grid) {
-                console.error("Critical Dashboard element missing: #my-plants-grid. Cannot render.");
-                return;
-            }
-
-            // Retrieve and parse the saved plants from localStorage
-            const plants = JSON.parse(localStorage.getItem('my_plants') || '[]');
+            // --- Status Label Logic ---
+            const statusLabel =
+                daysLeft == null ? '' :
+                (daysLeft <= 0
+                ? '<span class="ml-2 inline-block text-xs px-2 py-1 rounded-full bg-red-600 text-white flex-shrink-0">Water Now!</span>'
+                : daysLeft <= 2
+                ? '<span class="ml-2 inline-block text-xs px-2 py-1 rounded-full bg-yellow-500 text-forest-dark flex-shrink-0">Soon</span>'
+                : '<span class="ml-2 inline-block text-xs px-2 py-1 rounded-full bg-green-500 text-forest-dark flex-shrink-0">Happy</span>');
             
-            // [FIX] Only update the count if the element exists
-            if (countEl) {
-                countEl.textContent = plants.length;
-            }
+            // --- Progress Bar Logic ---
+            const progressPct = (!freqDays || freqDays === 0) ? 0 : Math.round((Math.min(freqDays, Math.max(0, daysSince)) / freqDays) * 100);
 
-            // Helper function to calculate the difference in days between two dates
-            const daysBetween = (from, to) => {
-                const ms = new Date(to).setHours(0,0,0,0) - new Date(from).setHours(0,0,0,0);
-                return Math.round(ms / (1000*60*60*24));
-            };
-            
-            const todayISO = new Date().toISOString().slice(0,10);
+            // --- Card HTML Structure (Updated layout for better spacing) ---
+            return `
 
-            // Function to generate the HTML for a single plant card
-            const cardHTML = (p) => {
-                // --- Water Calculation Logic ---
-                const freqDays = Number.isFinite(+p.water_frequency) ? Math.max(0, +p.water_frequency) : null;
-                const last = p.last_watered || todayISO; // Use today if last watered date is missing
-                
-                const daysSince = daysBetween(last, todayISO);
-                const daysLeft = freqDays != null ? Math.max(0, freqDays - daysSince) : null;
-                
-                // --- Status Label Logic ---
-                const statusLabel = (() => {
-                    if (daysLeft == null) return '';
-                    if (daysLeft <= 0) return '<span class="ml-2 inline-block text-xs px-2 py-1 rounded-full bg-red-600 text-white">Water Now!</span>';
-                    if (daysLeft <= 2) return '<span class="ml-2 inline-block text-xs px-2 py-1 rounded-full bg-yellow-500 text-forest-dark">Soon</span>';
-                    return '<span class="ml-2 inline-block text-xs px-2 py-1 rounded-full bg-green-500 text-forest-dark">Happy</span>';
-                })();
-                
-                // --- Progress Bar Logic ---
-                const progressPct = (() => {
-                    if (freqDays == null || freqDays === 0) return 0;
-                    const used = Math.min(freqDays, Math.max(0, daysSince));
-                    return Math.round((used / freqDays) * 100);
-                })();
-
-                // --- Card HTML Structure ---
-                return `
-                    <div class="rounded-2xl overflow-hidden shadow-soft dark:shadow-soft-dark border border-wood-light/50 dark:border-wood-dark/50 bg-white dark:bg-forest-text">
-                        <div class="p-6">
-                            <div class="text-3xl font-bold text-forest-text dark:text-sage-light flex items-center">
-                                ${p.nickname || p.species || 'New Plant'}
+                <div class="rounded-2xl overflow-hidden shadow-soft dark:shadow-soft-dark border border-wood-light/50 dark:border-wood-dark/50 bg-white dark:bg-forest-text">
+                    ${p.photo ? '<div class="w-full h-40 bg-wood-light/40 dark:bg-wood-dark/40 overflow-hidden"><img src="'+p.photo+'" alt="'+(p.nickname || p.species || 'Plant')+'" class="w-full h-40 object-cover"></div>' : ''}
+                    <div class="p-6">
+                        <!-- Use flex-wrap and space-between to handle long titles gracefully -->
+                        <div class="flex items-center justify-between flex-wrap gap-y-2">
+                            
+                            <!-- Left: Nickname and Status Label -->
+                            <div class="text-3xl font-bold text-forest-text dark:text-sage-light flex items-center min-w-0 pr-2">
+                                <span class="truncate">${p.nickname || p.species || 'New Plant'}</span>
                                 ${statusLabel}
                             </div>
-                            <div class="mt-2 text-sm text-gray-600 dark:text-gray-300">
-                                ${p.species || ''}${p.location ? ' • ' + p.location : ''}
-                            </div>
-                            <div class="mt-4 flex items-center text-sm text-gray-700 dark:text-gray-200 space-x-6">
-                                <div>💧 ${daysLeft == null ? '—' : daysLeft === 0 ? 'Water today' : 'Water in ' + daysLeft + ' day' + (daysLeft===1?'':'s')}</div>
-                                <div>☀️ ${p.sunlight_note || '—'}</div>
-                            </div>
-                            <!-- Progress Bar -->
-                            <div class="mt-4 h-2 bg-wood-light/60 dark:bg-wood-dark/60 rounded-full">
-                                <div class="h-2 bg-sage-green rounded-full" style="width: ${progressPct}%;"></div>
+                            
+                            <!-- Right: Action Buttons (Ensure they don't shrink) -->
+                            <div class="flex items-center gap-1 flex-shrink-0">
+                                <!-- Edit Button -->
+                                <button class="p-2 rounded-full hover:bg-wood-light/50 dark:hover:bg-wood-dark/70 transition" title="Edit" data-action="edit" data-id="${p.id}">
+                                    <i data-lucide="pencil" class="w-5 h-5"></i>
+                                </button>
+                                <!-- Delete Button -->
+                                <button class="p-2 rounded-full hover:bg-red-100/50 dark:hover:bg-wood-dark/70 transition" title="Delete" data-action="delete" data-id="${p.id}">
+                                    <i data-lucide="trash-2" class="w-5 h-5 text-red-500 dark:text-red-400"></i>
+                                </button>
                             </div>
                         </div>
+                        <div class="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                            ${p.species || ''}${p.location ? ' • ' + p.location : ''}
+                        </div>
+                        <div class="mt-4 flex items-center text-sm text-gray-700 dark:text-gray-200 space-x-6">
+                            <div>💧 ${daysLeft == null ? '—' : (daysLeft === 0 ? 'Water today' : 'Water in ' + daysLeft + ' day' + (daysLeft===1?'':'s'))}</div>
+                            <div>☀️ ${p.sunlight_note || '—'}</div>
+                        </div>
+                        <div class="mt-4 h-2 bg-wood-light/60 dark:bg-wood-dark/60 rounded-full">
+                            <div class="h-2 bg-sage-green rounded-full" style="width: ${progressPct}%;"></div>
+                        </div>
                     </div>
-                `;
-            };
-
-            // Render all plants or a "No plants yet" message
-            grid.innerHTML = plants.map(cardHTML).join('') || `
-                <div class="text-gray-500 dark:text-gray-300">No plants yet. Add one from “Add a New Plant”.</div>
+                </div>
             `;
-
-            // Optional: Add a Reset Button for testing
-            const resetButton = document.createElement('button');
-            resetButton.id = 'reset-plants';
-            resetButton.className = 'mt-4 px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700 transition duration-150';
-            resetButton.textContent = 'Reset All Plants (Development)';
-            
-            resetButton.addEventListener('click', () => { 
-                localStorage.removeItem('my_plants'); 
-                location.reload(); 
-            });
-            
-            // [FIX] Only append the reset button if the grid has a parent
-            // Append the reset button to the main dashboard container (which is grid's parent)
-            if (grid.parentNode) {
-                grid.parentNode.appendChild(resetButton); 
-            }
-
         });
+
+        // Display cards or empty message
+        grid.innerHTML = cards.join('') || '<div class="text-gray-500 dark:text-gray-300">No plants yet. Add one from “Add a New Plant”.</div>';
+        
+        // Re-render lucide icons after DOM update
+        if (window.lucide?.createIcons) lucide.createIcons();
+        
+        // Add the Reset Button for development/testing
+        const resetButton = document.createElement('button');
+        resetButton.id = 'reset-plants';
+        resetButton.className = 'mt-4 px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700 transition duration-150';
+        resetButton.textContent = 'Reset All Plants (Development)';
+        
+        resetButton.addEventListener('click', () => { 
+            localStorage.removeItem('my_plants'); 
+            render(); 
+        });
+        
+        if (grid.parentNode) {
+            grid.parentNode.appendChild(resetButton); 
+        }
+    }
+
+    // ---------- Delegated Click Handlers for Edit/Delete ----------
+    grid.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-action]');
+        if (!btn) return;
+
+        const id = btn.dataset.id;
+        const plants = getPlants();
+        const idx = plants.findIndex(x => String(x.id) === String(id));
+        
+        if (idx === -1) return;
+        const p = plants[idx];
+
+        if (btn.dataset.action === 'delete') {
+            if (!confirm(`Delete ${p.nickname || p.species}?`)) return; 
+            
+            plants.splice(idx, 1);
+            setPlants(plants);
+            render();
+
+        } else if (btn.dataset.action === 'edit') {
+            editId = p.id;
+
+            // Fill the modal form fields with current plant data
+            form.nickname.value = p.nickname || '';
+            form.species.value = p.species || '';
+            form.water_frequency.value = p.water_frequency || '';
+            form.last_watered.value = p.last_watered || '';
+            form.location.value = p.location || '';
+            form.notes.value = p.notes || '';
+            
+            // Show the modal
+            modal.classList.remove('hidden');
+        }
+    });
+
+    // ---------- Modal Actions ----------
+    
+    // Handle Cancel button click
+    document.getElementById('edit-cancel')?.addEventListener('click', () => {
+        modal.classList.add('hidden');
+        editId = null;
+    });
+    
+    // Handle Save button (form submit)
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const plants = getPlants();
+        const idx = plants.findIndex(x => String(x.id) === String(editId));
+
+        if (idx !== -1) {
+            // Update the plant object with new form data
+            plants[idx] = {
+                ...plants[idx],
+                nickname: form.nickname.value.trim(),
+                species: form.species.value.trim(),
+                water_frequency: form.water_frequency.value,
+                last_watered: form.last_watered.value,
+                location: form.location.value.trim(),
+                notes: form.notes.value.trim(),
+            };
+            setPlants(plants);
+        }
+
+        modal.classList.add('hidden');
+        editId = null;
+        render(); // Re-render the dashboard to show changes
+    });
+
+    // Initial render call
+    render();
+});
+
+
+
     </script>
 </body>
 </html>

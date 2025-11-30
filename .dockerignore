@@ -1,0 +1,25 @@
+# VCS / metadata
+.git
+.gitignore
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv
+
+# Local data & env
+.env
+data/
+*.db
+src/data/*.db
+
+# Node
+node_modules/
+
+# Test/coverage
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
