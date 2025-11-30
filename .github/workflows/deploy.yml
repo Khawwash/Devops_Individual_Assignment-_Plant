@@ -1,0 +1,63 @@
+name: Deploy Leafly to Cloud Run
+
+on:
+  push:
+    branches: ["main"]
+
+permissions:
+  id-token: write    # required for Workload Identity Federation
+  contents: read
+
+env:
+  REGION: europe-west1
+  SERVICE_NAME: leafly          # Cloud Run service name
+  REPO_NAME: leafly             # Artifact Registry repo name (in europe-west1)
+  IMAGE_NAME: leafly            # Docker image name
+  IMAGE_TAG: v1                 # bump when you want a new version
+
+jobs:
+  deploy-leafly:
+    runs-on: ubuntu-latest
+    environment: production     # uses the "production" environment you created
+
+    steps:
+      - name: Checkout Leafly repository
+        uses: actions/checkout@v4
+
+      # Load GCP project id from the production environment variable
+      - name: Set GCP project id
+        run: echo "GCP_PROJECT_ID=${{ vars.GCP_PROJECT_ID }}" >> $GITHUB_ENV
+
+      - name: Authenticate to GCP via Workload Identity Federation
+        uses: google-github-actions/auth@v2
+        with:
+          # TODO: replace YOUR_PROJECT_NUMBER with your numeric GCP project number
+          # You can get it with:
+          #   gcloud projects describe $GCP_PROJECT_ID --format="value(projectNumber)"
+          workload_identity_provider: "projects/YOUR_PROJECT_NUMBER/locations/global/workloadIdentityPools/github-pool/providers/github"
+          service_account: "github-deployer@${{ env.GCP_PROJECT_ID }}.iam.gserviceaccount.com"
+
+      - name: Set up gcloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Artifact Registry Docker auth
+        run: |
+          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Build and push Leafly image
+        run: |
+          IMAGE_URI="${{ env.REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}"
+          echo "IMAGE_URI=$IMAGE_URI"
+          docker build -t "$IMAGE_URI" .
+          docker push "$IMAGE_URI"
+          echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
+
+      - name: Deploy Leafly (plant dashboard) to Cloud Run
+        run: |
+          gcloud run deploy "${{ env.SERVICE_NAME }}" \
+            --image="$IMAGE_URI" \
+            --region="${{ env.REGION }}" \
+            --platform=managed \
+            --allow-unauthenticated \
+            --port=3000 \
+            --set-env-vars=FLASK_ENV=production,PLANT_DB_PATH=/tmp/Plant.db
