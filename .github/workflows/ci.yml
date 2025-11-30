@@ -58,7 +58,7 @@ jobs:
           tags: plants-api:ci
 
   deploy:
-    if: github.ref == 'refs/heads/main' && secrets.DEPLOY_HOOK_URL != ''
+    if: False 
     needs: lint-test-build
     runs-on: ubuntu-latest
     steps:
