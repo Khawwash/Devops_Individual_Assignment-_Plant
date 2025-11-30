@@ -12,7 +12,7 @@ jobs:
       PYTHONPATH: src
       FLASK_ENV: testing
       PORT: "3000"
-      PLANT_DB_PATH: ${{ runner.temp }}/Plant.db
+      PLANT_DB_PATH: /tmp/Plant.db
     steps:
       - uses: actions/checkout@v4
 
@@ -58,7 +58,7 @@ jobs:
           tags: plants-api:ci
 
   deploy:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && secrets.DEPLOY_HOOK_URL != ''
     needs: lint-test-build
     runs-on: ubuntu-latest
     steps:
