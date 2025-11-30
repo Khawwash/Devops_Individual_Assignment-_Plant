@@ -30,7 +30,6 @@ def persist_sqlite(plants: pd.DataFrame, db_path: Path) -> Path:
     try:
         cur = con.cursor()
         
-        # 1. Setup Table and PRAGMA
         cur.executescript("""
         PRAGMA journal_mode=WAL;
         CREATE TABLE IF NOT EXISTS plants (
@@ -41,7 +40,6 @@ def persist_sqlite(plants: pd.DataFrame, db_path: Path) -> Path:
         );
         """)
         
-        # 2. Prepare Data for Upsert
         # Upsert rows
         rows = [
             (
@@ -53,7 +51,6 @@ def persist_sqlite(plants: pd.DataFrame, db_path: Path) -> Path:
             for _, r in plants.iterrows()
         ]
         
-        # 3. Execute Upsert (INSERT OR REPLACE/UPDATE)
         cur.executemany("""
         INSERT INTO plants(name, water_frequency, sunlight_hours, soil_type)
         VALUES(?, ?, ?, ?)
@@ -65,7 +62,6 @@ def persist_sqlite(plants: pd.DataFrame, db_path: Path) -> Path:
         
         cur.execute("CREATE INDEX IF NOT EXISTS idx_plants_name ON plants(name);")
         
-        # 4. Optional: FTS5 for faster autocomplete (Corrected try/except nesting)
         try:
             cur.executescript("""
             CREATE VIRTUAL TABLE IF NOT EXISTS plants_fts USING fts5(name, content='plants', content_rowid='rowid');
@@ -86,7 +82,6 @@ def persist_sqlite(plants: pd.DataFrame, db_path: Path) -> Path:
             END;
             """)
         except sqlite3.OperationalError:
-            # FTS5 not available; skip silently
             pass
             
         con.commit()

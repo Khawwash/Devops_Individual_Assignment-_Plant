@@ -56,6 +56,45 @@
         }
     };
 
+    let photoDataUrl = '';
+    const photoInput = document.getElementById('plant-photo');
+    const photoPreview = document.getElementById('photo-preview');
+
+    photoInput?.addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { alert('Please choose an image.'); return; }
+
+    // Optional: compress to keep localStorage small
+    const dataUrl = await (async function toDataURL(f, maxW=800, maxH=800, quality=0.85) {
+    const img = new Image();
+    const reader = new FileReader();
+    const loaded = new Promise((resolve, reject) => {
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    });
+    reader.readAsDataURL(f);
+    const src = await loaded;
+    const imgLoaded = new Promise((resolve, reject) => {
+    img.onload = resolve; img.onerror = reject; img.src = src;
+    });
+    await imgLoaded;
+    let w = img.width, h = img.height;
+    const scale = Math.min(1, maxW / w, maxH / h);
+    w = Math.round(w * scale); h = Math.round(h * scale);
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+    return canvas.toDataURL('image/jpeg', quality);
+    })(file);
+
+    photoDataUrl = dataUrl;
+    if (photoPreview) {
+    photoPreview.src = photoDataUrl;
+    photoPreview.classList.remove('hidden');
+    }
+});
+
     // --- 1. FORM SUBMIT HANDLER (Attached only ONCE) ---
     const formEl = document.getElementById('add-plant-form');
     if (formEl) {
@@ -72,7 +111,8 @@
                 // Assuming you have an element with ID 'sunlight-select'
                 sunlight_note: document.getElementById('sunlight-select')?.value || '', 
                 location: document.getElementById('location')?.value?.trim() || '',
-                notes: document.getElementById('notes')?.value?.trim() || ''
+                notes: document.getElementById('notes')?.value?.trim() || '',
+                photo: photoDataUrl || '',
             };
             document.getElementById('save-button')?.addEventListener('click', (e) => {
             e.preventDefault();
@@ -336,25 +376,21 @@
                 <div class="w-full p-4 shrink-0 space-y-6">
                     <h2 class="text-2xl font-semibold text-sage-green mb-4">Step 3: Photo & Finish</h2>
                     
-                    <div>
-                        <label for="plant-photo" class="block text-sm font-medium mb-2 text-gray-700 dark:text-sage-light">Upload Plant Photo</label>
-                        <div class="flex items-center space-x-4">
-                            <div class="w-24 h-24 bg-wood-light dark:bg-wood-dark rounded-xl flex items-center justify-center border-2 border-dashed border-wood-dark/30 dark:border-sage-light/30">
-                                <i data-lucide="image" class="w-8 h-8 text-gray-500 dark:text-gray-400"></i>
-                            </div>
-                            <input type="file" id="plant-photo" accept="image/*" class="text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-sage-green/80 file:text-forest-dark hover:file:bg-sage-green transition duration-300">
-                        </div>
+                    <div> 
+                    <label for="plant-photo" class="block text-sm font-medium mb-2 text-gray-700 dark:text-sage-light">Upload Plant Photo</label> 
+                        <div class="flex items-center space-x-4"> 
+                            <div class="w-24 h-24 bg-wood-light dark:bg-wood-dark rounded-xl flex items-center justify-center border-2 border-dashed border-wood-dark/30 dark:border-sage-light/30 relative overflow-hidden"> 
+                                <img id="photo-preview" alt="Plant preview" class="absolute inset-0 w-full h-full object-cover hidden">
+            
+                                <i data-lucide="image" class="w-8 h-8 text-gray-500 dark:text-gray-400"></i> 
+                            </div> 
+                            <input type="file" id="plant-photo" accept="image/*" class="text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-sage-green/80 file:text-forest-dark hover:file:bg-sage-green transition duration-300"> 
+                        </div> 
                     </div>
 
                     <div class="pt-4 border-t border-wood-light dark:border-wood-dark/50">
                         <h3 class="text-xl font-semibold text-forest-text dark:text-sage-light mb-2">Ready to Grow?</h3>
                         <p class="text-gray-600 dark:text-gray-300">You're all set! Review your details and hit 'Add to Dashboard'.</p>
-                    </div>
-
-                    <div class="p-4 bg-wood-light/50 dark:bg-wood-dark/50 rounded-xl space-y-2 text-sm">
-                        <p><strong>Nickname:</strong> <span id="summary-nickname">Freddy the Ficus (Mock)</span></p>
-                        <p><strong>Species:</strong> <span id="summary-species">Ficus lyrata (Mock)</span></p>
-                        <p><strong>Watering:</strong> <span id="summary-watering">Every two weeks (Mock)</span></p>
                     </div>
 
                 </div>

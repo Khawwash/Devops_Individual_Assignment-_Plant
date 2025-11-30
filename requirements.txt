@@ -5,6 +5,12 @@ pandas
 kagglehub
 python-dotenv
 cryptography
+bcrypt
+pytest
+pytest-cov
+ruff
+gunicorn
+prometheus-client
 
 # Note: sqlite3 is part of Python's standard library and
 # should not be installed via pip.
