@@ -52,10 +52,12 @@ jobs:
 
       - name: Deploy Leafly (plant dashboard) to Cloud Run
         run: |
-          gcloud run deploy "${{ env.SERVICE_NAME }}" \
-            --image="$IMAGE_URI" \
-            --region="${{ env.REGION }}" \
-            --platform=managed \
-            --allow-unauthenticated \
-            --port=3000 \
-            --set-env-vars=FLASK_ENV=production,PLANT_DB_PATH=/tmp/Plant.db
+            SECRET=$(openssl rand -hex 32)
+            gcloud run deploy "${{ env.SERVICE_NAME }}" \
+                --image="$IMAGE_URI" \
+                --region="${{ env.REGION }}" \
+                --platform=managed \
+                --allow-unauthenticated \
+                --port=3000 \
+                --set-env-vars=FLASK_ENV=production,PLANT_DB_PATH=/tmp/Plant.db,FLASK_SECRET_KEY=$SECRET
+
