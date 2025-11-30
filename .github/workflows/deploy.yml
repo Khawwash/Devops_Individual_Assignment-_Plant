@@ -31,10 +31,8 @@ jobs:
       - name: Authenticate to GCP via Workload Identity Federation
         uses: google-github-actions/auth@v2
         with:
-          # TODO: replace YOUR_PROJECT_NUMBER with your numeric GCP project number
-          # You can get it with:
-          #   gcloud projects describe $GCP_PROJECT_ID --format="value(projectNumber)"
-          workload_identity_provider: "projects/YOUR_PROJECT_NUMBER/locations/global/workloadIdentityPools/github-pool/providers/github"
+         
+          workload_identity_provider: "projects/916827687330/locations/global/workloadIdentityPools/github-pool/providers/github"
           service_account: "github-deployer@${{ env.GCP_PROJECT_ID }}.iam.gserviceaccount.com"
 
       - name: Set up gcloud SDK
