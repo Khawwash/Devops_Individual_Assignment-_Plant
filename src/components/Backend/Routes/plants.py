@@ -31,7 +31,7 @@ def create_plants_bp(repo: PlantsRepository | None = None) -> Blueprint:
         except Exception as exc:
             # Log the error so we can see it in Cloud Run logs
             current_app.logger.exception("Plant search failed: %s", exc)
-            return jsonify({"error": "internal server error"}), 500
+            return jsonify([]), 200
 
         results = [row_to_dict(row) for row in rows]
         return jsonify(results)
