@@ -1,12 +1,15 @@
-import logging
 import os
-import sqlite3
 from pathlib import Path
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from ..Repositories.db import PlantsRepository
 from ..config import PLANT_DB_PATH
 
 DEFAULT_LIMIT = 25
+
+
+def row_to_dict(row):
+    return dict(row)
+
 
 def create_plants_bp(repo: PlantsRepository | None = None) -> Blueprint:
     repo = repo or PlantsRepository()
@@ -17,7 +20,6 @@ def create_plants_bp(repo: PlantsRepository | None = None) -> Blueprint:
         db_path = Path(os.getenv("PLANT_DB_PATH") or PLANT_DB_PATH)
         return jsonify({"exists": db_path.exists(), "path": str(db_path)})
 
-    
     @bp.get("/api/plants/search")
     def search_plants():
         q = request.args.get("q", "").strip()
