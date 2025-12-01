@@ -1,41 +1,44 @@
-# Project Name
+# Plant Care API
 
-A utility for managing user accounts in the application.
+Flask backend with SQLite, Prometheus metrics, and Docker/Compose support.
 
-**Prerequisites**
-- Python 3 is required.
-- Using a Virtual Environment (venv) is mandatory.
+## Quickstart (local)
+- Python 3.12+; create venv: `python3 -m venv .venv && source .venv/bin/activate`
+- Install deps: `pip install -r requirements.txt`
+- Run app: `python -m src.components.Backend.App` (serves on `http://localhost:3000`)
+- Key env vars: `FLASK_SECRET_KEY` (set in prod), `PORT` (default 3000), `PLANT_DB_PATH` (default `./data/Plant.db`)
 
-**Setup and Installation**
-- Create the virtual environment:
-  - `python3 -m venv .venv`
-- Activate the virtual environment:
-  - macOS: `source .venv/bin/activate`
-  - Windows : `.venv\Scripts\Activate.ps1`
-- Install dependencies from requirements.txt:
-  - `pip install -r requirements.txt`
+## Tests & Coverage
+- `pytest --cov=src --cov-report=term-missing --cov-fail-under=70`
+- Pytest config: `pytest.ini` (adds `src` to path, filters Deprecation/Resource warnings)
+- Coverage omit rules in `.coveragerc` (entrypoints/legacy files excluded)
 
-**Dependencies**
-- `flask`
-- `requests`
-- `pandas`
-- `kagglehub`
-- `python-dotenv`
-- `cryptography`
-- `sqlite3` 
+## Docker
+- Build: `docker build -t plants-api:dev .`
+- Run:  
+  ```sh
+  docker run --rm -p 3000:3000 \
+    -e FLASK_ENV=production \
+    -e PLANT_DB_PATH=/data/Plant.db \
+    -e FLASK_SECRET_KEY=change-me \
+    -v "$PWD/data:/data" \
+    plants-api:dev
+  ```
+- WSGI entry: `src/components/Backend/wsgi.py` (`src.components.Backend.wsgi:app`)
 
-**Running Tests**
-- Ensure the virtual environment is active.
-- Install test dependencies:
-  - `pip install pytest pytest-cov`
-- Run the test suite (from the project root):
-  - `pytest`
-  - `pytest -vv`
-- If your environment needs an explicit module path:
-  - Linux/macOS: `PYTHONPATH=. pytest`
-  - Windows (PowerShell): `$env:PYTHONPATH='.'; pytest`
+## Docker Compose + Prometheus
+- `docker compose up -d --build`
+- Prometheus scrapes `api:3000/metrics` (see `prometheus.yml`), Grafana at `http://localhost:3001`
 
-**Execution**
-- Ensure the virtual environment is active.
-- Launch the main application:
-  - `python -m src.components.Backend.App`
+## Endpoints
+- Health: `GET /health`
+- Metrics: `GET /metrics`
+- Plants search: `GET /api/plants/search?q=...`
+- Pages: `/`, `/login`, `/signup`, `/dashboard`, etc.
+
+## CI/CD
+- GitHub Actions workflow runs ruff lint, pytest w/ coverage (fail-under 70%), uploads coverage, builds Docker image.
+- Optional deploy step triggers webhook on `main` (see `.github/workflows/ci.yml`).
+
+## Env example
+- `.env.example` provided; copy to `.env` and adjust secrets/paths as needed.
