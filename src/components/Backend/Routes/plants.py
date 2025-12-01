@@ -17,17 +17,21 @@ def create_plants_bp(repo: PlantsRepository | None = None) -> Blueprint:
         db_path = Path(os.getenv("PLANT_DB_PATH") or PLANT_DB_PATH)
         return jsonify({"exists": db_path.exists(), "path": str(db_path)})
 
+    
     @bp.get("/api/plants/search")
     def search_plants():
         q = request.args.get("q", "").strip()
-        db_path = Path(os.getenv("PLANT_DB_PATH") or PLANT_DB_PATH)
-        if not q or not db_path.exists():
+        if not q:
             return jsonify([])
+
         try:
             rows = repo.search(q, limit=DEFAULT_LIMIT)
-            return jsonify(rows)
-        except sqlite3.Error:
-            logging.exception("Failed to query plants")
-            return jsonify({"error": "database unavailable"}), 500
+        except Exception as exc:
+            # Log the error so we can see it in Cloud Run logs
+            current_app.logger.exception("Plant search failed: %s", exc)
+            return jsonify({"error": "internal server error"}), 500
+
+        results = [row_to_dict(row) for row in rows]
+        return jsonify(results)
 
     return bp
